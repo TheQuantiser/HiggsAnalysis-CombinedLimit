@@ -87,7 +87,7 @@ All of the fits that are performed in <span style="font-variant:small-caps;">Com
      * `--cminApproxPreFitTolerance arg`: If non-zero, first do a pre-fit with this tolerance (or 10 times the final tolerance, whichever is largest)
      * `--cminApproxPreFitStrategy arg`:   Strategy to use in the pre-fit. The default is strategy 0.
 * `--cminDefaultMinimizerType arg`: Set the default minimizer type. By default this is set to Minuit2.
-* `--cminDefaultMinimizerAlgo arg`: Set the default minimizer algorithm. The default algorithm is Migrad.
+* `--cminDefaultMinimizerAlgo arg`: Set the default minimizer algorithm. The default algorithm is Migrad. When using the optional Ceres plugin the supported algorithms are `TrustRegion` and `LineSearch` (default `TrustRegion`).
 * `--cminDefaultMinimizerTolerance arg`: Set the default minimizer tolerance, the default is 0.1.
 * `--cminDefaultMinimizerStrategy arg`: Set the default minimizer strategy between 0 (speed), 1 (balance - *default*), 2 (robustness). The [Minuit documentation](http://www.fresco.org.uk/minuit/cern/node6.html) for this is pretty sparse but in general, 0 means evaluate the function less often, while 2 will waste function calls to get precise answers. An important note is that the `Hesse` algorithm (for error and correlation estimation) will be run *only* if the strategy is 1 or 2.
 * `--cminFallbackAlgo arg`: Provides a list of fallback algorithms, to be used in case the default minimizer fails. You can provide multiple options using the syntax `Type[,algo],strategy[:tolerance]`: eg `--cminFallbackAlgo Minuit2,Simplex,0:0.1` will fall back to the simplex algorithm of Minuit2 with strategy 0 and a tolerance 0.1, while `--cminFallbackAlgo Minuit2,1` will use the default algorithm (Migrad) of Minuit2 with strategy 1.
@@ -100,6 +100,7 @@ The allowed combinations of minimizer types and minimizer algorithms are as foll
 |`Minuit`	      | `Migrad`, `Simplex`, `Combined`, `Scan` |
 |`Minuit2` 	      | `Migrad`, `Simplex`, `Combined`, `Scan` |
 |`GSLMultiMin`       | `ConjugateFR`, `ConjugatePR`, `BFGS`, `BFGS2`, `SteepestDescent`|
+|`Ceres`             | `TrustRegion`, `LineSearch`|
 
 You can find details about these in the Minuit2 documentation [here](https://root.cern.ch/root/htmldoc/guides/minuit2/Minuit2.html).
 
