@@ -95,9 +95,8 @@ CERES_OBJ     = $(OBJ_DIR)/CeresMinimizer.o
 # allow includes and linking from conda or custom installs
 CERES_INC     = $(if $(CONDA_PREFIX),-I${CONDA_PREFIX}/include,)
 CERES_LIB     = $(if $(CONDA_PREFIX),-L${CONDA_PREFIX}/lib,) -lceres -lglog -lgflags
-# glog headers from conda need explicit macros when not using CMake
-# define gflags usage and disable symbol export decoration
-CERES_DEFS    = -DGLOG_USE_GFLAGS -DGLOG_EXPORT= -DGLOG_NO_EXPORT
+# glog headers from conda need explicit definitions when not using CMake
+CERES_DEFS    = -DGLOG_USE_GFLAGS -DGLOG_NO_EXPORT
 
 #Makefile Rules ---------------------------------------------------------------
 .PHONY: clean exe python
