@@ -339,7 +339,7 @@ bool CeresMinimizer::Minimize() {
     std::vector<std::pair<const double *, const double *>> blocks;
     blocks.emplace_back(x_.data(), x_.data());
     if (covariance.Compute(blocks, bestProblem.get())) {
-      covariance.GetCovariance(x_.data(), x_.data(), &cov_[0]);
+      covariance.GetCovarianceBlock(x_.data(), x_.data(), &cov_[0]);
       covOK = true;
       TMatrixDSym covmat(nDim_);
       for (unsigned int i = 0; i < nDim_; ++i)
