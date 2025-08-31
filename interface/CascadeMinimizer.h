@@ -68,9 +68,9 @@ class CascadeMinimizer {
         /// compact information about an algorithm
         struct Algo { 
             Algo() : type(), algo(), tolerance(), strategy(-1) {}
-            Algo(const std::string &tystr, const std::string &str, float tol=-1.f, int strategy=-1) :type(tystr), algo(str), tolerance(tol), strategy(strategy) {}
-            std::string type; std::string algo; float tolerance; int strategy;
-            static float default_tolerance() { return 0.1; }
+            Algo(const std::string &tystr, const std::string &str, double tol=-1., int strategy=-1) :type(tystr), algo(str), tolerance(tol), strategy(strategy) {}
+            std::string type; std::string algo; double tolerance; int strategy;
+            static double default_tolerance() { return 0.1; }
             static int   default_strategy() { return -1; }
         };
         /// list of algorithms to run if the default one fails
@@ -87,8 +87,8 @@ class CascadeMinimizer {
         static bool poiOnlyFit_;
         /// do first a minimization of each nuisance individually 
         static bool singleNuisFit_;
-        /// do first a minimization of each nuisance individually 
-        static float nuisancePruningThreshold_;
+        /// do first a minimization of each nuisance individually
+        static double nuisancePruningThreshold_;
         /// do first a fit of only the POI
         static bool setZeroPoint_;
         /// don't do old fallback using robustMinimize 
