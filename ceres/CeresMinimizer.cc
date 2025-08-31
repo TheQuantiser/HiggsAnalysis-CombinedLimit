@@ -5,6 +5,7 @@
 #include <TPluginManager.h>
 #include <ceres/numeric_diff_cost_function.h>
 #include <ceres/loss_function.h>
+#include <ceres/covariance.h>
 #include <TString.h>
 #include <fstream>
 #include <cstdlib>
@@ -14,6 +15,7 @@
 #include <algorithm>
 #include <thread>
 #include <chrono>
+#include <iostream>
 
 CeresMinimizer::CeresMinimizer(const char *) : func_(nullptr), gradFunc_(nullptr), nDim_(0), nFree_(0), nCalls_(0), fMinVal_(0.0), edm_(0.0), numDiffStep_(1e-4), forceNumeric_(false) {}
 
@@ -144,6 +146,11 @@ bool CeresMinimizer::Minimize() {
     bool useGauss = (jitterDist == "gaussian");
     auto startTime = std::chrono::steady_clock::now();
 
+    std::string cfgMsg = Form("config algo=%s linearSolver=%s maxIter=%d funTol=%g gradTol=%g parTol=%g threads=%d",
+                              algo.c_str(), linearSolver.c_str(), maxIter, funTol, gradTol, parTol, numThreads);
+    CombineLogger::instance().log("CeresMinimizer.cc", __LINE__, cfgMsg, __func__);
+    if (verbose) std::cout << "Ceres " << cfgMsg << std::endl;
+
     unsigned int it = 0;
     for (; it < multiStart; ++it) {
         if (maxTime > 0.0) {
@@ -220,6 +227,9 @@ bool CeresMinimizer::Minimize() {
     fMinVal_ = bestFval;
     grad_.assign(nDim_,0.0);
     hess_.assign(nDim_*nDim_,0.0);
+    cov_.assign(nDim_*nDim_,0.0);
+    err_.assign(nDim_,0.0);
+
     if (gradFunc_) {
         gradFunc_->Gradient(x_.data(), &grad_[0]);
         gradFunc_->Hessian(x_.data(), &hess_[0]);
@@ -236,6 +246,40 @@ bool CeresMinimizer::Minimize() {
             xtmp[i] = x_[i];
         }
     }
+
+    // compute covariance and parameter errors
+    {
+        ceres::Problem covProblem;
+        ceres::CostFunction *cost = nullptr;
+        if (gradFunc_ && !forceNumeric_) cost = new CostFunction(gradFunc_);
+        else {
+            ceres::NumericDiffOptions ndOpts; ndOpts.relative_step_size = numDiffStep_;
+            if (diffMethod == "forward")
+                cost = new ceres::NumericDiffCostFunction<NoGradFunctor, ceres::FORWARD, 1, ceres::DYNAMIC>(new NoGradFunctor(func_), ceres::TAKE_OWNERSHIP, nDim_, ndOpts);
+            else
+                cost = new ceres::NumericDiffCostFunction<NoGradFunctor, ceres::CENTRAL, 1, ceres::DYNAMIC>(new NoGradFunctor(func_), ceres::TAKE_OWNERSHIP, nDim_, ndOpts);
+        }
+        ceres::LossFunction *loss = nullptr;
+        if (lossStr == "huber") loss = new ceres::HuberLoss(lossScale);
+        else if (lossStr == "cauchy") loss = new ceres::CauchyLoss(lossScale);
+        covProblem.AddResidualBlock(cost, loss, x_.data());
+        for (unsigned int i=0;i<nDim_;++i) {
+            if (isFixed_[i]) covProblem.SetParameterBlockConstant(&x_[i]);
+            else {
+                if (std::isfinite(lower_[i])) covProblem.SetParameterLowerBound(x_.data(), i, lower_[i]-boundRelax);
+                if (std::isfinite(upper_[i])) covProblem.SetParameterUpperBound(x_.data(), i, upper_[i]+boundRelax);
+            }
+        }
+        ceres::Covariance::Options covOpts;
+        ceres::Covariance covariance(covOpts);
+        std::vector<std::pair<const double*, const double*> > blocks;
+        blocks.emplace_back(x_.data(), x_.data());
+        if (covariance.Compute(blocks, &covProblem)) {
+            covariance.GetCovarianceBlock(x_.data(), x_.data(), &cov_[0]);
+            for (unsigned int i=0;i<nDim_; ++i) err_[i] = std::sqrt(std::fabs(cov_[i*nDim_+i]));
+        }
+    }
+
 
     CombineLogger::instance().log("CeresMinimizer.cc", __LINE__, bestSummary.BriefReport(), __func__);
     if (verbose) CombineLogger::instance().log("CeresMinimizer.cc", __LINE__, bestSummary.FullReport(), __func__);

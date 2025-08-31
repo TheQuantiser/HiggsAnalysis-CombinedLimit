@@ -86,6 +86,8 @@ All of the fits that are performed in <span style="font-variant:small-caps;">Com
 * `--cminPreFit arg` If set to a value N > 0, the minimizer will perform a pre-fit with strategy (N-1), with the nuisance parameters frozen.
      * `--cminApproxPreFitTolerance arg`: If non-zero, first do a pre-fit with this tolerance (or 10 times the final tolerance, whichever is largest)
      * `--cminApproxPreFitStrategy arg`:   Strategy to use in the pre-fit. The default is strategy 0.
+* `--cminDefaultMinimizerType arg`: Set the default minimizer type. By default this is set to Minuit2.
+* `--cminDefaultMinimizerAlgo arg`: Set the default minimizer algorithm. The default algorithm is Migrad. When using the optional Ceres plugin the supported algorithms are `TrustRegion` and `LineSearch` (default `TrustRegion`).
 * `--cminDefaultMinimizerType arg`: Set the default minimizer type. By default this is set to Minuit2. Supported types include Minuit, Minuit2, GSLMultiMin and Ceres.
 * `--cminDefaultMinimizerAlgo arg`: Set the default minimizer algorithm. The default algorithm is Migrad. For Ceres use the `TrustRegion` algorithm (or `LineSearch`).
 * `--cminCeresAlgo arg`: Convenience alias to pick the Ceres algorithm (`TrustRegion` or `LineSearch`).

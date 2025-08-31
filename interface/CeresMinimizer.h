@@ -33,7 +33,11 @@ public:
     unsigned int NCalls() const override { return nCalls_; }
     unsigned int NDim() const override { return nDim_; }
     unsigned int NFree() const override { return nFree_; }
-
+    bool ProvidesError() const override { return true; }
+    const double * Errors() const override { return err_.empty() ? nullptr : err_.data(); }
+    double CovMatrix(unsigned int i, unsigned int j) const override {
+        return cov_.empty() ? 0.0 : cov_[i*nDim_+j];
+    }
     bool ProvidesError() const override { return false; }
     const double * Errors() const override { return nullptr; }
     double CovMatrix(unsigned int, unsigned int) const override { return 0.0; }
@@ -65,6 +69,8 @@ private:
 
     std::vector<double> grad_;
     std::vector<double> hess_;
+    std::vector<double> cov_;
+    std::vector<double> err_;
 
     double fMinVal_;
     double edm_;
