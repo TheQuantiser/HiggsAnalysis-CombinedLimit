@@ -13,3 +13,5 @@ dependencies:
   - pcre
   - eigen
   - ceres-solver
+  - gflags
+  - glog
