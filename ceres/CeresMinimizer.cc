@@ -224,17 +224,7 @@ bool CeresMinimizer::Minimize() {
         gradFunc_->Gradient(x_.data(), &grad_[0]);
         gradFunc_->Hessian(x_.data(), &hess_[0]);
     } else {
-        std::vector<double> xtmp = x_;
-        for (unsigned int i=0;i<nDim_;++i) {
-            xtmp[i] += numDiffStep_;
-            double fp = (*func_)(xtmp.data());
-            xtmp[i] -= 2*numDiffStep_;
-            double fm = (*func_)(xtmp.data());
-            grad_[i] = (fp - fm) / (2*numDiffStep_);
-            double f0 = bestFval;
-            hess_[i*nDim_+i] = (fp - 2*f0 + fm)/(numDiffStep_*numDiffStep_);
-            xtmp[i] = x_[i];
-        }
+        ComputeGradientAndHessian(x_.data());
     }
 
     CombineLogger::instance().log("CeresMinimizer.cc", __LINE__, bestSummary.BriefReport(), __func__);
@@ -283,6 +273,21 @@ void CeresMinimizer::Hessian(const double *x, double *hes) const {
             }
             xtmp[j] = x[j];
         }
+    }
+}
+
+void CeresMinimizer::ComputeGradientAndHessian(const double *x) {
+    std::vector<double> xtmp(nDim_);
+    std::copy(x, x + nDim_, xtmp.begin());
+    std::vector<double> grad2(nDim_);
+    Gradient(x, &grad_[0]);
+    for (unsigned int j=0; j<nDim_; ++j) {
+        xtmp[j] += numDiffStep_;
+        Gradient(xtmp.data(), &grad2[0]);
+        for (unsigned int i=0; i<nDim_; ++i) {
+            hess_[i*nDim_ + j] = (grad2[i] - grad_[i]) / numDiffStep_;
+        }
+        xtmp[j] = x[j];
     }
 }
 

@@ -45,6 +45,8 @@ public:
     void Hessian(const double *x, double *hes) const;
 
 private:
+    void ComputeGradientAndHessian(const double *x);
+
     struct CostFunction : public ceres::CostFunction {
         CostFunction(const ROOT::Math::IMultiGradFunction *f);
         bool Evaluate(double const* const* parameters, double *residuals, double **jacobians) const override;
