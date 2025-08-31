@@ -23,7 +23,11 @@ public:
   ~CeresMinimizer() override;
 
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6, 30, 0)
-  std::string_view Name() const override { return "Ceres"; }
+  // ROOT 6.30 switched the Minimizer::Name() interface away from const char*
+  // but some 6.30 builds still expect a std::string return type rather than
+  // std::string_view. Use std::string here to satisfy the override while
+  // remaining backward compatible.
+  std::string Name() const override { return "Ceres"; }
   bool ProvidesGradient() const { return true; }
   bool ProvidesHessian() const { return true; }
 #elif ROOT_VERSION_CODE >= ROOT_VERSION(6, 24, 0)
