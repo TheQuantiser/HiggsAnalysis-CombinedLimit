@@ -229,6 +229,7 @@ bool CeresMinimizer::Minimize() {
     hess_.assign(nDim_*nDim_,0.0);
     cov_.assign(nDim_*nDim_,0.0);
     err_.assign(nDim_,0.0);
+  
     if (gradFunc_) {
         gradFunc_->Gradient(x_.data(), &grad_[0]);
         gradFunc_->Hessian(x_.data(), &hess_[0]);
@@ -278,6 +279,7 @@ bool CeresMinimizer::Minimize() {
             for (unsigned int i=0;i<nDim_; ++i) err_[i] = std::sqrt(std::fabs(cov_[i*nDim_+i]));
         }
     }
+
 
     CombineLogger::instance().log("CeresMinimizer.cc", __LINE__, bestSummary.BriefReport(), __func__);
     if (verbose) CombineLogger::instance().log("CeresMinimizer.cc", __LINE__, bestSummary.FullReport(), __func__);

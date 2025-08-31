@@ -15,6 +15,8 @@
 #include <TSystem.h>
 
 #include <iomanip>
+#include <cstdlib>
+#include <set>
 
 boost::program_options::options_description CascadeMinimizer::options_("Cascade Minimizer options");
 std::vector<CascadeMinimizer::Algo> CascadeMinimizer::fallbacks_;
@@ -43,7 +45,7 @@ std::map<std::string,std::vector<std::string> > const CascadeMinimizer::minimize
  {"Minuit"	 ,{"Migrad","Simplex","Combined","Scan"}}
 ,{"Minuit2" 	 ,{"Migrad","Simplex","Combined","Scan"}}
 ,{"GSLMultiMin"  ,{"ConjugateFR", "ConjugatePR", "BFGS", "BFGS2", "SteepestDescent"}}
- ,{"Ceres"        ,{"TrustRegion","LineSearch"}}
+,{"Ceres"        ,{"TrustRegion","LineSearch"}}
 };
 
 CascadeMinimizer::CascadeMinimizer(RooAbsReal &nll, Mode mode, RooRealVar *poi) :
@@ -725,11 +727,38 @@ void CascadeMinimizer::initOptions()
         ("cminDefaultMinimizerType",boost::program_options::value<std::string>(&defaultMinimizerType_)->default_value(defaultMinimizerType_), "Set the default minimizer Type (e.g. Minuit2, Minuit, GSLMultiMin, Ceres)")
         ("cminDefaultMinimizerAlgo",boost::program_options::value<std::string>(&defaultMinimizerAlgo_)->default_value(defaultMinimizerAlgo_), "Set the default minimizer Algo (e.g. Migrad, Simplex, TrustRegion)")
 	("cminDefaultMinimizerTolerance",boost::program_options::value<double>(&defaultMinimizerTolerance_)->default_value(defaultMinimizerTolerance_), "Set the default minimizer Tolerance")
+        ("cminDefaultMinimizerType",boost::program_options::value<std::string>(&defaultMinimizerType_)->default_value(defaultMinimizerType_), "Set the default minimizer type (e.g. Minuit, Minuit2, GSLMultiMin, Ceres)")
+        ("cminDefaultMinimizerAlgo",boost::program_options::value<std::string>(&defaultMinimizerAlgo_)->default_value(defaultMinimizerAlgo_), "Set the default minimizer algorithm (e.g. Migrad, Simplex, TrustRegion)")
+        ("cminDefaultMinimizerTolerance",boost::program_options::value<double>(&defaultMinimizerTolerance_)->default_value(defaultMinimizerTolerance_), "Set the default minimizer Tolerance")
 	("cminDefaultMinimizerPrecision",boost::program_options::value<double>(&defaultMinimizerPrecision_)->default_value(defaultMinimizerPrecision_), "Set the default minimizer precision")
 	("cminDefaultMinimizerStrategy",boost::program_options::value<int>(&strategy_)->default_value(strategy_), "Set the default minimizer (initial) strategy")
         ("cminRunAllDiscreteCombinations",  "Run all combinations for discrete nuisances")
         ("cminDiscreteMinTol", boost::program_options::value<double>(&discreteMinTol_)->default_value(discreteMinTol_), "Tolerance on min NLL for discrete combination iterations")
         ("cminM2StorageLevel", boost::program_options::value<int>(&minuit2StorageLevel_)->default_value(minuit2StorageLevel_), "Storage level for minuit2 (0 = don't store intermediate covariances, 1 = store them)")
+        ("cminCeresMaxIterations", boost::program_options::value<int>()->default_value(1000), "Maximum number of iterations for Ceres minimizer")
+        ("cminCeresLinearSolver", boost::program_options::value<std::string>()->default_value("dense_qr"), "Linear solver for Ceres (e.g. dense_qr, dense_normal_cholesky, iterative_schur)")
+        ("cminCeresAlgo", boost::program_options::value<std::string>()->default_value("TrustRegion"), "Algorithm for Ceres minimizer (TrustRegion or LineSearch)")
+        ("cminCeresVerbose", boost::program_options::value<bool>()->default_value(false), "Print full Ceres solver report to combine log")
+        ("cminCeresMultiStart", boost::program_options::value<unsigned int>()->default_value(1), "Run Ceres multiple times with randomised starts and keep best fit")
+        ("cminCeresJitter", boost::program_options::value<double>()->default_value(1.0), "Scale of randomised multi-start perturbations (0 disables jitter)")
+        ("cminCeresNumThreads", boost::program_options::value<int>()->default_value(1), "Number of threads used by the Ceres solver")
+        ("cminCeresRandomSeed", boost::program_options::value<unsigned int>()->default_value(12345), "Random seed for Ceres multi-start initialisation")
+        ("cminCeresUseNumericGradient", boost::program_options::bool_switch()->default_value(false), "Force numeric derivatives even if analytic gradients are available")
+        ("cminUseCeres", boost::program_options::bool_switch()->default_value(false), "Use Ceres minimizer (alias for --cminDefaultMinimizerType=Ceres --cminDefaultMinimizerAlgo=TrustRegion)")
+        ("cminCeresFunctionTolerance", boost::program_options::value<double>()->default_value(defaultMinimizerTolerance_), "Function tolerance for Ceres minimizer")
+        ("cminCeresGradientTolerance", boost::program_options::value<double>()->default_value(defaultMinimizerTolerance_), "Gradient tolerance for Ceres minimizer")
+        ("cminCeresParameterTolerance", boost::program_options::value<double>()->default_value(defaultMinimizerTolerance_), "Parameter tolerance for Ceres minimizer")
+        ("cminCeresNumericDiffStep", boost::program_options::value<double>()->default_value(1e-4), "Step size for Ceres numeric differentiation")
+        ("cminCeresDiffMethod", boost::program_options::value<std::string>()->default_value("central"), "Numeric differentiation method for Ceres (forward or central)")
+        ("cminCeresLossFunction", boost::program_options::value<std::string>()->default_value("none"), "Loss function for Ceres (none, huber, cauchy)")
+        ("cminCeresInitialRadius", boost::program_options::value<double>()->default_value(1.0), "Initial trust region radius for Ceres")
+        ("cminCeresLossScale", boost::program_options::value<double>()->default_value(1.0), "Scale parameter for Huber/Cauchy loss functions")
+        ("cminCeresLogFile", boost::program_options::value<std::string>()->default_value(""), "File to write full Ceres solver summary")
+        ("cminCeresProgress", boost::program_options::bool_switch()->default_value(false), "Print Ceres iteration progress to stdout")
+        ("cminCeresMaxTime", boost::program_options::value<double>()->default_value(0.0), "Maximum wall-clock time for Ceres in seconds (0 disables)")
+        ("cminCeresJitterDist", boost::program_options::value<std::string>()->default_value("uniform"), "Distribution for multi-start jitter (uniform or gaussian)")
+        ("cminCeresBoundRelax", boost::program_options::value<double>()->default_value(0.0), "Symmetric relaxation applied to parameter bounds")
+        ("cminCeresAutoThreads", boost::program_options::bool_switch()->default_value(false), "Set Ceres threads to hardware concurrency when unspecified")
         //("cminNuisancePruning", boost::program_options::value<float>(&nuisancePruningThreshold_)->default_value(nuisancePruningThreshold_), "if non-zero, discard constrained nuisances whose effect on the NLL when changing by 0.2*range is less than the absolute value of the threshold; if threshold is negative, repeat afterwards the fit with these floating")
 
         //("cminDefaultIntegratorEpsAbs", boost::program_options::value<double>(), "RooAbsReal::defaultIntegratorConfig()->setEpsAbs(x)")
@@ -780,7 +809,7 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
     }
 
     // check default minimizer type/algo if they are set and make sense
-    if (vm.count("cminDefaultMinimizerAlgo")){
+    if (vm.count("cminDefaultMinimizerType") || vm.count("cminDefaultMinimizerAlgo")){
       if (! checkAlgoInType(defaultMinimizerType_,defaultMinimizerAlgo_)) {
       // severe enough to print to terminal
             std::cerr << Form("The combination of minimizer type/algo %s/%s, is not recognized. Please set these with --cminDefaultMinimizerType and --cminDefaultMinimizerAlgo",defaultMinimizerType_.c_str(),defaultMinimizerAlgo_.c_str());
@@ -789,6 +818,11 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
       if (defaultMinimizerType_ == "Ceres") {
           gSystem->Load("libCeresMinimizer");
       }
+    }
+
+    // ensure sensible defaults when selecting Ceres without explicit algorithm
+    if (defaultMinimizerType_ == "Ceres" && !vm.count("cminDefaultMinimizerAlgo")) {
+        defaultMinimizerAlgo_ = vm.count("cminCeresAlgo") ? vm["cminCeresAlgo"].as<std::string>() : std::string("TrustRegion");
     }
 
     if (vm.count("cminFallbackAlgo")) {
@@ -839,6 +873,23 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
     ROOT::Math::IOptions & options = ROOT::Math::MinimizerOptions::Default("Minuit2");
     options.SetValue("StorageLevel", minuit2StorageLevel_);
     
+    if (vm["cminUseCeres"].as<bool>()) {
+        defaultMinimizerType_ = "Ceres";
+        defaultMinimizerAlgo_ = vm.count("cminCeresAlgo") ? vm["cminCeresAlgo"].as<std::string>() : std::string("TrustRegion");
+    }
+    if (vm.count("cminCeresAlgo")) {
+        std::string algo = vm["cminCeresAlgo"].as<std::string>();
+        static const std::set<std::string> allowed{"TrustRegion","LineSearch"};
+        if (!allowed.count(algo)) {
+            CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,Form("Unknown Ceres algorithm %s, defaulting to TrustRegion",algo.c_str()),__func__);
+            algo = "TrustRegion";
+        }
+        defaultMinimizerAlgo_ = algo;
+    }
+    if (defaultMinimizerType_ == "Ceres") {
+        gSystem->Load("libCeresMinimizer");
+        setenv("CERES_ALGO", defaultMinimizerAlgo_.c_str(), 1);
+    }
     // Note that the options are not applied again when recreating a CascadeMinimizer so need to set the global attributes (should we make the modifiable options persistant too?)
     ROOT::Math::MinimizerOptions::SetDefaultMinimizer(defaultMinimizerType_.c_str(),defaultMinimizerAlgo_.c_str());
     ROOT::Math::MinimizerOptions::SetDefaultTolerance(defaultMinimizerTolerance_);
@@ -846,6 +897,127 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
       ROOT::Math::MinimizerOptions::SetDefaultPrecision(defaultMinimizerPrecision_);
     }
     ROOT::Math::MinimizerOptions::SetDefaultStrategy(strategy_);
+
+    // propagate Ceres specific options through environment variables
+    if (vm.count("cminCeresMaxIterations")) {
+        int val = vm["cminCeresMaxIterations"].as<int>();
+        if (val < 1) { val = 1; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresMaxIterations must be >0, using 1",__func__); }
+        setenv("CERES_MAX_ITERATIONS", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresLinearSolver")) {
+        std::string v = vm["cminCeresLinearSolver"].as<std::string>();
+        static const std::set<std::string> allowed{"dense_qr","dense_normal_cholesky","iterative_schur","sparse_normal_cholesky","dense_schur","sparse_schur"};
+        if (!allowed.count(v)) {
+            CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,Form("Unknown Ceres linear solver %s, defaulting to dense_qr",v.c_str()),__func__);
+            v = "dense_qr";
+        }
+        setenv("CERES_LINEAR_SOLVER", v.c_str(), 1);
+    }
+    if (vm["cminCeresVerbose"].as<bool>()) {
+        setenv("CERES_VERBOSE", "1", 1);
+    }
+    if (vm.count("cminCeresMultiStart")) {
+        unsigned int val = vm["cminCeresMultiStart"].as<unsigned int>();
+        if (val < 1) { val = 1; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresMultiStart must be >0, using 1",__func__); }
+        setenv("CERES_MULTI_START", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresJitter")) {
+        double val = vm["cminCeresJitter"].as<double>();
+        if (val < 0) { val = 0.0; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresJitter must be >=0, using 0",__func__); }
+        setenv("CERES_JITTER", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresNumThreads")) {
+        int val = vm["cminCeresNumThreads"].as<int>();
+        if (val < 1) { val = 1; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresNumThreads must be >0, using 1",__func__); }
+        setenv("CERES_NUM_THREADS", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresRandomSeed")) {
+        unsigned int val = vm["cminCeresRandomSeed"].as<unsigned int>();
+        setenv("CERES_RANDOM_SEED", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresLogFile")) {
+        std::string f = vm["cminCeresLogFile"].as<std::string>();
+        if (!f.empty()) setenv("CERES_LOG_FILE", f.c_str(), 1);
+    }
+    if (vm.count("cminCeresFunctionTolerance")) {
+        double val = vm["cminCeresFunctionTolerance"].as<double>();
+        if (val <= 0) { val = defaultMinimizerTolerance_; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresFunctionTolerance must be >0, using default",__func__); }
+        setenv("CERES_FUNCTION_TOLERANCE", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresGradientTolerance")) {
+        double val = vm["cminCeresGradientTolerance"].as<double>();
+        if (val <= 0) { val = defaultMinimizerTolerance_; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresGradientTolerance must be >0, using default",__func__); }
+        setenv("CERES_GRADIENT_TOLERANCE", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresParameterTolerance")) {
+        double val = vm["cminCeresParameterTolerance"].as<double>();
+        if (val <= 0) { val = defaultMinimizerTolerance_; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresParameterTolerance must be >0, using default",__func__); }
+        setenv("CERES_PARAMETER_TOLERANCE", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresNumericDiffStep")) {
+        double val = vm["cminCeresNumericDiffStep"].as<double>();
+        if (val <= 0) { val = 1e-4; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresNumericDiffStep must be >0, using 1e-4",__func__); }
+        setenv("CERES_NUMERIC_DIFF_STEP", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresDiffMethod")) {
+        std::string v = vm["cminCeresDiffMethod"].as<std::string>();
+        static const std::set<std::string> allowed{"forward","central"};
+        if (!allowed.count(v)) {
+            CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,Form("Unknown diff method %s, defaulting to central",v.c_str()),__func__);
+            v = "central";
+        }
+        setenv("CERES_DIFF_METHOD", v.c_str(), 1);
+    }
+    if (vm.count("cminCeresLossFunction")) {
+        std::string v = vm["cminCeresLossFunction"].as<std::string>();
+        static const std::set<std::string> allowed{"none","huber","cauchy"};
+        if (!allowed.count(v)) {
+            CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,Form("Unknown loss function %s, defaulting to none",v.c_str()),__func__);
+            v = "none";
+        }
+        setenv("CERES_LOSS_FUNCTION", v.c_str(), 1);
+    }
+    if (vm.count("cminCeresLossScale")) {
+        double val = vm["cminCeresLossScale"].as<double>();
+        if (val <= 0) {
+            CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresLossScale must be >0, using 1",__func__);
+            val = 1.0;
+        }
+        setenv("CERES_LOSS_SCALE", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresInitialRadius")) {
+        double val = vm["cminCeresInitialRadius"].as<double>();
+        if (val <= 0) { val = 1.0; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresInitialRadius must be >0, using 1",__func__); }
+        setenv("CERES_INITIAL_RADIUS", std::to_string(val).c_str(), 1);
+    }
+    if (vm["cminCeresUseNumericGradient"].as<bool>()) {
+        setenv("CERES_FORCE_NUMERIC", "1", 1);
+    }
+    if (vm["cminCeresProgress"].as<bool>()) {
+        setenv("CERES_PROGRESS", "1", 1);
+    }
+    if (vm.count("cminCeresMaxTime")) {
+        double val = vm["cminCeresMaxTime"].as<double>();
+        if (val < 0) { val = 0; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresMaxTime must be >=0, using 0",__func__); }
+        if (val > 0) setenv("CERES_MAX_TIME", std::to_string(val).c_str(), 1);
+    }
+    if (vm.count("cminCeresJitterDist")) {
+        std::string v = vm["cminCeresJitterDist"].as<std::string>();
+        static const std::set<std::string> allowed{"uniform","gaussian"};
+        if (!allowed.count(v)) {
+            CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,Form("Unknown jitter distribution %s, defaulting to uniform",v.c_str()),__func__);
+            v = "uniform";
+        }
+        setenv("CERES_JITTER_DIST", v.c_str(), 1);
+    }
+    if (vm.count("cminCeresBoundRelax")) {
+        double val = vm["cminCeresBoundRelax"].as<double>();
+        if (val < 0) { val = 0; CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"cminCeresBoundRelax must be >=0, using 0",__func__); }
+        if (val > 0) setenv("CERES_BOUND_RELAX", std::to_string(val).c_str(), 1);
+    }
+    if (vm["cminCeresAutoThreads"].as<bool>()) {
+        setenv("CERES_AUTO_THREADS", "1", 1);
+    }
 
     //if (vm.count("cminDefaultIntegratorEpsAbs")) RooAbsReal::defaultIntegratorConfig()->setEpsAbs(vm["cminDefaultIntegratorEpsAbs"].as<double>());
     //if (vm.count("cminDefaultIntegratorEpsRel")) RooAbsReal::defaultIntegratorConfig()->setEpsRel(vm["cminDefaultIntegratorEpsRel"].as<double>());

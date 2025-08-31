@@ -39,6 +39,9 @@ public:
     double CovMatrix(unsigned int i, unsigned int j) const override {
         return cov_.empty() ? 0.0 : cov_[i*nDim_+j];
     }
+    bool ProvidesError() const override { return false; }
+    const double * Errors() const override { return nullptr; }
+    double CovMatrix(unsigned int, unsigned int) const override { return 0.0; }
 
     bool ProvidesGradient() const override { return true; }
     bool ProvidesHessian() const override { return true; }
