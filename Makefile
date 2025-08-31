@@ -87,6 +87,14 @@ EXES = $(PROGS:.cpp=)
 SCRIPTS = $(notdir $(wildcard ${SCRIPTS_DIR}/*.py))
 PYLIB_DIR = $(LIB_DIR)/python
 
+# Ceres minimizer plugin ------------------------------------------------------
+CERES_LIBNAME = CeresMinimizer
+CERES_SONAME  = lib$(CERES_LIBNAME).so
+CERES_SRC     = ceres/CeresMinimizer.cc
+CERES_OBJ     = $(OBJ_DIR)/CeresMinimizer.o
+# allow includes and linking from conda or custom installs
+CERES_INC     = $(if $(CONDA_PREFIX),-I${CONDA_PREFIX}/include,)
+CERES_LIB     = $(if $(CONDA_PREFIX),-L${CONDA_PREFIX}/lib,) -lceres
 # Optional Ceres minimizer plugin ---------------------------------------------
 ifdef CERES
 CERES_OBJ = $(OBJ_DIR)/CeresMinimizer.o
@@ -99,6 +107,7 @@ endif
 #Makefile Rules ---------------------------------------------------------------
 .PHONY: clean exe python
 
+all: exe python $(LIB_DIR)/$(CERES_SONAME)
 all: exe python $(CERES_SO)
 
 #---------------------------------------
@@ -144,6 +153,15 @@ $(CERES_OBJ): ceres/CeresMinimizer.cc $(INC_DIR)/CeresMinimizer.h | $(OBJ_DIR)
 $(CERES_SO): $(CERES_OBJ) | $(LIB_DIR)
         $(CXX) -shared -fPIC -o $@ $^ $(CERES_LIB) $(ROOTLIBS)
 endif
+
+#---------------------------------------
+
+
+$(CERES_OBJ): $(CERES_SRC) $(INC_DIR)/CeresMinimizer.h | $(OBJ_DIR)
+	$(CXX) $(CCFLAGS) -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) $(CERES_INC) -c $< -o $@
+
+$(LIB_DIR)/$(CERES_SONAME): $(CERES_OBJ) | $(LIB_DIR)
+	$(CXX) -shared -fPIC -o $@ $^ $(CERES_LIB) $(ROOTLIBS)
 
 #---------------------------------------
 
