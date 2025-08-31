@@ -482,7 +482,7 @@ namespace cmsmath {
 bool cmsmath::SequentialMinimizer::doFullMinim()
 {
     if (fullMinimizer_.get() == 0) {
-        fullMinimizer_.reset(ROOT::Math::Factory::CreateMinimizer("Minuit2", ""));
+        fullMinimizer_.reset(ROOT::Math::Factory::CreateMinimizer(ROOT::Math::MinimizerOptions::DefaultMinimizerType().c_str(), ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo().c_str()));
         fullMinimizer_->SetTolerance(Tolerance());
         fullMinimizer_->SetStrategy(Strategy()-2);
     }
