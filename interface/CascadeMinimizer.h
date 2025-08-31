@@ -36,9 +36,10 @@ class CascadeMinimizer {
         //void collectIrrelevantNuisances(RooAbsCollection &irrelevant) const ;
 	bool freezeDiscParams(const bool);
         void setAutoBounds(const RooArgSet *pois) ;
-        void setAutoMax(const RooArgSet *pois) ; 
-	double tolerance() {return defaultMinimizerTolerance_;};
-	std::string algo() {return defaultMinimizerAlgo_;};
+        void setAutoMax(const RooArgSet *pois) ;
+        double tolerance() {return defaultMinimizerTolerance_;};
+        std::string algo() {return defaultMinimizerAlgo_;};
+        std::string type() {return defaultMinimizerType_;};
     private:
         RooAbsReal & nll_;
         std::unique_ptr<RooMinimizer> minimizer_;
