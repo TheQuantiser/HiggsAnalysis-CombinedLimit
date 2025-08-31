@@ -948,6 +948,7 @@ bool CascadeMinimizer::checkAlgoInType(std::string type, std::string algo) {
 
 void CascadeMinimizer::applyOptions(const boost::program_options::variables_map &vm) {
   using namespace std;
+  int verbose = vm.count("verbose") ? vm["verbose"].as<int>() : 0;
   preScan_ = vm.count("cminPreScan");
   poiOnlyFit_ = vm.count("cminPoiOnlyFit");
   singleNuisFit_ = vm.count("cminSingleNuisFit");
@@ -1257,6 +1258,39 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
   }
   if (vm["cminCeresAutoThreads"].as<bool>()) {
     setenv("CERES_AUTO_THREADS", "1", 1);
+  }
+
+  if (verbose > 0 && defaultMinimizerType_ == "Ceres") {
+    CombineLogger::instance().log("CascadeMinimizer.cc", __LINE__, "Ceres configuration:", __func__);
+    auto logEnv = [&](const char *env, const char *opt) {
+      const char *val = getenv(env);
+      if (val) {
+        CombineLogger::instance().log("CascadeMinimizer.cc", __LINE__, Form("  %s = %s", opt, val), __func__);
+      }
+    };
+    logEnv("CERES_ALGO", "--cminCeresAlgo");
+    logEnv("CERES_MAX_ITERATIONS", "--cminCeresMaxIterations");
+    logEnv("CERES_LINEAR_SOLVER", "--cminCeresLinearSolver");
+    logEnv("CERES_MULTI_START", "--cminCeresMultiStart");
+    logEnv("CERES_JITTER", "--cminCeresJitter");
+    logEnv("CERES_NUM_THREADS", "--cminCeresNumThreads");
+    logEnv("CERES_RANDOM_SEED", "--cminCeresRandomSeed");
+    logEnv("CERES_LOG_FILE", "--cminCeresLogFile");
+    logEnv("CERES_FUNCTION_TOLERANCE", "--cminCeresFunctionTolerance");
+    logEnv("CERES_GRADIENT_TOLERANCE", "--cminCeresGradientTolerance");
+    logEnv("CERES_PARAMETER_TOLERANCE", "--cminCeresParameterTolerance");
+    logEnv("CERES_NUMERIC_DIFF_STEP", "--cminCeresNumericDiffStep");
+    logEnv("CERES_DIFF_METHOD", "--cminCeresDiffMethod");
+    logEnv("CERES_LOSS_FUNCTION", "--cminCeresLossFunction");
+    logEnv("CERES_LOSS_SCALE", "--cminCeresLossScale");
+    logEnv("CERES_INITIAL_RADIUS", "--cminCeresInitialRadius");
+    logEnv("CERES_MAX_TIME", "--cminCeresMaxTime");
+    logEnv("CERES_JITTER_DIST", "--cminCeresJitterDist");
+    logEnv("CERES_BOUND_RELAX", "--cminCeresBoundRelax");
+    logEnv("CERES_VERBOSE", "--cminCeresVerbose");
+    logEnv("CERES_FORCE_NUMERIC", "--cminCeresUseNumericGradient");
+    logEnv("CERES_PROGRESS", "--cminCeresProgress");
+    logEnv("CERES_AUTO_THREADS", "--cminCeresAutoThreads");
   }
 
   //if (vm.count("cminDefaultIntegratorEpsAbs")) RooAbsReal::defaultIntegratorConfig()->setEpsAbs(vm["cminDefaultIntegratorEpsAbs"].as<double>());
