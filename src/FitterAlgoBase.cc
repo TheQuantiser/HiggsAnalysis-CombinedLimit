@@ -582,10 +582,10 @@ double FitterAlgoBase::findCrossing(
   double here = nll.getVal();
   int nfail = 0;
   if (verbose > 0) {
-    //printf("      %s      lvl-here  lvl-there   stepping\n", r.GetName()); fflush(stdout);
+    // Print table header: POI value, NLL minus target at current and previous step, and the step size
     CombineLogger::instance().log("FitterAlgoBase.cc",
                                   __LINE__,
-                                  std::string(Form(" %s lvl-here lvl-there 	stepping ", r.GetName())),
+                                  std::string(Form(" %s        dNLL(curr)  dNLL(prev)        step", r.GetName())),
                                   __func__);
   }
   do {
@@ -629,11 +629,11 @@ double FitterAlgoBase::findCrossing(
     double there = here;
     here = nll.getVal();
     if (verbose > 0) {
-      //printf("%f    %+.5f  %+.5f    %f\n", rStart, level-here, level-there, rInc); fflush(stdout);
+      // Log current POI value, delta NLL at current and previous steps, and the step size
       CombineLogger::instance().log(
           "FitterAlgoBase.cc",
           __LINE__,
-          std::string(Form(" %f    %+.5f  %+.5f    %f", rStart, level - here, level - there, rInc)),
+          std::string(Form(" %11.6f  %+.5f  %+.5f  %+.5f", rStart, here - level, there - level, rInc)),
           __func__);
     }
     if (fabs(here - level) < 4 * crossingTolerance_) {

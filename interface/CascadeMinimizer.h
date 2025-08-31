@@ -40,6 +40,7 @@ class CascadeMinimizer {
         double tolerance() {return defaultMinimizerTolerance_;};
         std::string algo() {return defaultMinimizerAlgo_;};
         std::string type() {return defaultMinimizerType_;};
+        static void printCeresConfig(int verbose);
     private:
         RooAbsReal & nll_;
         std::unique_ptr<RooMinimizer> minimizer_;
@@ -110,7 +111,6 @@ class CascadeMinimizer {
 
         static std::map<std::string,std::vector<std::string> > const minimizerAlgoMap_;
         static bool checkAlgoInType(std::string, std::string );
-        static void printCeresConfig(int verbose);
 };
 
 // Singleton Class inside!
