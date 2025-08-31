@@ -6,6 +6,10 @@ option( MODIFY_ROOTMAP "Modify generated Rootmap to take out classes already bun
 option( INSTALL_PYTHON "Install the Python library and scripts" TRUE )
 option( USE_VDT "Use VDT (fast and vectorisable mathematical functions)" TRUE )
 
+# Allow users to request a particular default minimizer type at build time.
+# If set to "Ceres" we will require the Ceres library to be available.
+set(cminDefaultMinimizerType "" CACHE STRING "Default minimizer type to use")
+
 # Can build with CMake after e.g. setting up StatAnalysis release like this:
 # export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase
 # source $ATLAS_LOCAL_ROOT_BASE/user/atlasLocalSetup.sh; asetup StatAnalysis,0.3.2
@@ -18,7 +22,17 @@ find_package(Eigen3 REQUIRED)
 find_package(Vdt)
 find_package(LCG QUIET) # only used for FindBoost in StatAnalysis
 find_package(Boost CONFIG REQUIRED COMPONENTS program_options filesystem)
+# The Ceres minimizer is optional. For nonstandard installations (e.g. conda)
+# set Ceres_DIR to the directory containing CeresConfig.cmake so that
+# find_package can locate it.
 find_package(Ceres)
+if(NOT Ceres_FOUND)
+  message(STATUS "Ceres not found. If installed in a nonstandard location (e.g. conda), set Ceres_DIR to the path containing CeresConfig.cmake")
+endif()
+
+if(cminDefaultMinimizerType STREQUAL "Ceres" AND NOT Ceres_FOUND)
+  message(FATAL_ERROR "cminDefaultMinimizerType=Ceres requested but Ceres was not found. Set Ceres_DIR appropriately")
+endif()
 
 message(STATUS "Using ROOT From: ${ROOT_INCLUDE_DIRS}")
 include(${ROOT_USE_FILE})
