@@ -177,6 +177,7 @@ void FitterAlgoBase::applyOptionsBase(const boost::program_options::variables_ma
     //std::cout << "        Strategy   "  << minimizerStrategyForMinos_  <<std::endl;
     //std::cout << "        Type,Algo  "  << minimizerAlgoForMinos_      <<std::endl;
   }
+  CascadeMinimizer::printCeresConfig(verbose);
 }
 
 bool FitterAlgoBase::run(RooWorkspace *w,
