@@ -13,6 +13,7 @@ using RootIMultiGradFunction = ROOT::Math::IMultiGradFunction;
 #include <string>
 #include <vector>
 #include <memory>
+#include <RVersion.h>
 
 /// Minimizer interface using Ceres Solver
 class CeresMinimizer : public ROOT::Math::Minimizer {
@@ -20,7 +21,13 @@ public:
     CeresMinimizer(const char *name = nullptr);
     ~CeresMinimizer() override;
 
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6,30,0)
+    std::string GetName() const override { return "Ceres"; }
+#else
     const char * Name() const override { return "Ceres"; }
+    bool ProvidesGradient() const override { return true; }
+    bool ProvidesHessian() const override { return true; }
+#endif
 
     void Clear() override;
     void SetFunction(const ROOT::Math::IMultiGenFunction & func) override;
@@ -46,9 +53,6 @@ public:
         if (cov_.empty() || i >= nDim_ || j >= nDim_) return 0.0;
         return cov_[i*nDim_ + j];
     }
-
-    bool ProvidesGradient() const override { return true; }
-    bool ProvidesHessian() const override { return true; }
 
     void Gradient(const double *x, double *grad) const;
     void Hessian(const double *x, double *hes) const;

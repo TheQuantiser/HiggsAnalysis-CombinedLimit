@@ -3,7 +3,6 @@
 #include <Math/MinimizerOptions.h>
 #include <TPluginManager.h>
 #include <TMatrixDSym.h>
-#include <ceres/numeric_diff_cost_function.h>
 #include <ceres/loss_function.h>
 #include <TString.h>
 #include <fstream>
@@ -78,14 +77,34 @@ bool CeresMinimizer::CostFunction::Evaluate(double const* const* parameters, dou
     return true;
 }
 
-struct NoGradFunctor {
-    explicit NoGradFunctor(const ROOT::Math::IMultiGenFunction *f) : func(f) {}
-    bool operator()(const double * const x, double *residuals) const {
+struct NumericCostFunction : public ceres::CostFunction {
+    NumericCostFunction(const ROOT::Math::IMultiGenFunction *f, double step) : func(f), step(step) {
+        set_num_residuals(1);
+        mutable_parameter_block_sizes()->push_back(f->NDim());
+    }
+    bool Evaluate(double const* const* parameters, double *residuals, double **jacobians) const override {
+        const double *x = parameters[0];
         double fval = (*func)(x);
-        residuals[0] = std::sqrt(std::max(fval, 0.0));
+        double safeFval = std::max(fval, 0.0);
+        double sqrtFval = std::sqrt(safeFval);
+        residuals[0] = sqrtFval;
+        if (jacobians && jacobians[0]) {
+            std::vector<double> xtmp(func->NDim());
+            std::copy(x, x + func->NDim(), xtmp.begin());
+            double coeff = sqrtFval > 0 ? 0.5 / sqrtFval : 0.0;
+            for (unsigned int i = 0; i < func->NDim(); ++i) {
+                xtmp[i] += step;
+                double fp = (*func)(xtmp.data());
+                xtmp[i] -= 2 * step;
+                double fm = (*func)(xtmp.data());
+                jacobians[0][i] = coeff * (fp - fm) / (2 * step);
+                xtmp[i] = x[i];
+            }
+        }
         return true;
     }
     const ROOT::Math::IMultiGenFunction *func;
+    double step;
 };
 
 bool CeresMinimizer::Minimize() {
@@ -125,7 +144,6 @@ bool CeresMinimizer::Minimize() {
     if (const char *env = std::getenv("CERES_NUMERIC_DIFF_STEP")) numericStep = std::abs(std::atof(env));
     if (numericStep <= 0) numericStep = 1e-4;
     numDiffStep_ = numericStep;
-    std::string diffMethod = std::getenv("CERES_DIFF_METHOD") ? std::getenv("CERES_DIFF_METHOD") : std::string("central");
     std::string lossStr = std::getenv("CERES_LOSS_FUNCTION") ? std::getenv("CERES_LOSS_FUNCTION") : std::string("none");
     double initRadius = 1.0;
     if (const char *env = std::getenv("CERES_INITIAL_RADIUS")) initRadius = std::max(1e-12, std::atof(env));
@@ -165,13 +183,7 @@ bool CeresMinimizer::Minimize() {
         ceres::Problem problem;
         ceres::CostFunction *cost = nullptr;
         if (gradFunc_ && !forceNumeric) cost = new CostFunction(gradFunc_);
-        else {
-            ceres::NumericDiffOptions ndOpts; ndOpts.relative_step_size = numericStep;
-            if (diffMethod == "forward")
-                cost = new ceres::NumericDiffCostFunction<NoGradFunctor, ceres::FORWARD, 1, ceres::DYNAMIC>(new NoGradFunctor(func_), ceres::TAKE_OWNERSHIP, nDim_, ndOpts);
-            else
-                cost = new ceres::NumericDiffCostFunction<NoGradFunctor, ceres::CENTRAL, 1, ceres::DYNAMIC>(new NoGradFunctor(func_), ceres::TAKE_OWNERSHIP, nDim_, ndOpts);
-        }
+        else cost = new NumericCostFunction(func_, numericStep);
         ceres::LossFunction *loss = nullptr;
         if (lossStr == "huber") loss = new ceres::HuberLoss(lossScale);
         else if (lossStr == "cauchy") loss = new ceres::CauchyLoss(lossScale);
@@ -223,12 +235,7 @@ bool CeresMinimizer::Minimize() {
     fMinVal_ = bestFval;
     grad_.assign(nDim_,0.0);
     hess_.assign(nDim_*nDim_,0.0);
-    if (gradFunc_) {
-        gradFunc_->Gradient(x_.data(), &grad_[0]);
-        gradFunc_->Hessian(x_.data(), &hess_[0]);
-    } else {
-        ComputeGradientAndHessian(x_.data());
-    }
+    ComputeGradientAndHessian(x_.data());
 
     cov_.assign(nDim_*nDim_, 0.0);
     errors_.assign(nDim_, 0.0);
@@ -283,23 +290,19 @@ void CeresMinimizer::Gradient(const double *x, double *grad) const {
 }
 
 void CeresMinimizer::Hessian(const double *x, double *hes) const {
-    if (gradFunc_ && !forceNumeric_) {
-        gradFunc_->Hessian(x, hes);
-    } else {
-        std::vector<double> xtmp(nDim_);
-        std::copy(x, x + nDim_, xtmp.begin());
-        std::vector<double> grad1(nDim_), grad2(nDim_);
-        Gradient(x, &grad1[0]);
-        for (unsigned int j=0;j<nDim_;++j) {
-            double step = step_[j] * numDiffStep_;
-            if (step == 0) step = numDiffStep_;
-            xtmp[j] += step;
-            Gradient(xtmp.data(), &grad2[0]);
-            for (unsigned int i=0;i<nDim_;++i) {
-                hes[i*nDim_+j] = (grad2[i]-grad1[i])/step;
-            }
-            xtmp[j] = x[j];
+    std::vector<double> xtmp(nDim_);
+    std::copy(x, x + nDim_, xtmp.begin());
+    std::vector<double> grad1(nDim_), grad2(nDim_);
+    Gradient(x, &grad1[0]);
+    for (unsigned int j = 0; j < nDim_; ++j) {
+        double step = step_[j] * numDiffStep_;
+        if (step == 0) step = numDiffStep_;
+        xtmp[j] += step;
+        Gradient(xtmp.data(), &grad2[0]);
+        for (unsigned int i = 0; i < nDim_; ++i) {
+            hes[i*nDim_ + j] = (grad2[i] - grad1[i]) / step;
         }
+        xtmp[j] = x[j];
     }
 }
 
