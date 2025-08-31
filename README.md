@@ -11,7 +11,7 @@ The source code of this documentation can be found in the `docs/` folder in this
 ### Ceres minimizer plugin
 
 The build system optionally integrates the [Ceres Solver](http://ceres-solver.org) as a ROOT minimizer. When Ceres is available the
-`libCeresMinimizer` plugin is built automatically. The plugin can be selected at runtime when calling `combine` and supports both
+`libCeresMinimizer` plugin is built automatically. When using the standalone `Makefile` build, enable it with `CERES=1` (e.g. `make CONDA=1 CERES=1`). The plugin can be selected at runtime when calling `combine` and supports both
 the `TrustRegion` and `LineSearch` algorithms. Use `--cminCeresAlgo` to choose the algorithm explicitly. Available linear solvers include `dense_qr`, `dense_normal_cholesky`, `iterative_schur`, `sparse_normal_cholesky`, `dense_schur` and `sparse_schur`:
 
 ```
