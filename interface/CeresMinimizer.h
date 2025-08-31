@@ -22,19 +22,33 @@ public:
   CeresMinimizer(const char *name = nullptr);
   ~CeresMinimizer() override;
 
-#if ROOT_VERSION_CODE >= ROOT_VERSION(6, 30, 0)
-  // ROOT 6.30 switched the Minimizer::Name() interface away from const char*
-  // but some 6.30 builds still expect a std::string return type rather than
-  // std::string_view. Use std::string here to satisfy the override while
-  // remaining backward compatible.
-  std::string Name() const override { return "Ceres"; }
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6, 32, 0)
+// ROOT ≥ 6.32: ROOT::Math::Minimizer has no Name(), and
+// ProvidesGradient/ProvidesHessian are not virtual in the base.
+// -> Do not declare Name(); keep helpers as non-virtuals.
   bool ProvidesGradient() const { return true; }
   bool ProvidesHessian() const { return true; }
+
+#elif ROOT_VERSION_CODE >= ROOT_VERSION(6, 30, 0)
+// ROOT 6.30.x: some builds changed/experimented with Name()'s return type.
+// Provide a non-virtual Name() to keep compatibility without risking a bad override.
+# if defined(__cpp_lib_string_view) && __cpp_lib_string_view >= 201606
+  std::string_view Name() const { return "Ceres"; }
+# else
+  std::string Name() const { return "Ceres"; }
+# endif
+  bool ProvidesGradient() const { return true; }
+  bool ProvidesHessian() const { return true; }
+
 #elif ROOT_VERSION_CODE >= ROOT_VERSION(6, 24, 0)
-  const char *Name() const override { return "Ceres"; }
-  bool ProvidesGradient() const override { return true; }
-  bool ProvidesHessian() const override { return true; }
+// Older 6.24–6.28 era: Name() was const char*. We don't need 'override' here;
+// it will still override if the signature matches that ROOT version.
+  const char *Name() const { return "Ceres"; }
+  bool ProvidesGradient() const { return true; }
+  bool ProvidesHessian() const { return true; }
+
 #else
+// Very old ROOT
   const char *Name() const { return "Ceres"; }
   bool ProvidesGradient() const { return true; }
   bool ProvidesHessian() const { return true; }
