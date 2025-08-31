@@ -23,10 +23,14 @@ public:
 
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6,30,0)
     std::string GetName() const override { return "Ceres"; }
-#else
+#elif ROOT_VERSION_CODE >= ROOT_VERSION(6,24,0)
     const char * Name() const override { return "Ceres"; }
     bool ProvidesGradient() const override { return true; }
     bool ProvidesHessian() const override { return true; }
+#else
+    const char * Name() const { return "Ceres"; }
+    bool ProvidesGradient() const { return true; }
+    bool ProvidesHessian() const { return true; }
 #endif
 
     void Clear() override;
