@@ -86,9 +86,8 @@ All of the fits that are performed in <span style="font-variant:small-caps;">Com
 * `--cminPreFit arg` If set to a value N > 0, the minimizer will perform a pre-fit with strategy (N-1), with the nuisance parameters frozen.
      * `--cminApproxPreFitTolerance arg`: If non-zero, first do a pre-fit with this tolerance (or 10 times the final tolerance, whichever is largest)
      * `--cminApproxPreFitStrategy arg`:   Strategy to use in the pre-fit. The default is strategy 0.
-* `--cminDefaultMinimizerType arg`: Set the default minimizer type. By default this is set to Minuit2. Supported types include Minuit, Minuit2, GSLMultiMin and Ceres.
-* `--cminDefaultMinimizerAlgo arg`: Set the default minimizer algorithm. The default algorithm is Migrad. For Ceres use the `TrustRegion` algorithm (or `LineSearch`).
- * `--cminCeresAlgo arg`: Convenience alias to pick the Ceres algorithm (`TrustRegion` or `LineSearch`; numeric codes `0` and `1` are also accepted). Supplying this option automatically selects the Ceres minimizer.
+* `--cminDefaultMinimizerType arg`: Set the default minimizer type. By default this is set to Minuit2.
+* `--cminDefaultMinimizerAlgo arg`: Set the default minimizer algorithm. The default algorithm is Migrad. When using the optional Ceres plugin the supported algorithm is `TrustRegion`.
 * `--cminDefaultMinimizerTolerance arg`: Set the default minimizer tolerance, the default is 0.1.
 * `--cminDefaultMinimizerStrategy arg`: Set the default minimizer strategy between 0 (speed), 1 (balance - *default*), 2 (robustness). The [Minuit documentation](http://www.fresco.org.uk/minuit/cern/node6.html) for this is pretty sparse but in general, 0 means evaluate the function less often, while 2 will waste function calls to get precise answers. An important note is that the `Hesse` algorithm (for error and correlation estimation) will be run *only* if the strategy is 1 or 2.
 * `--cminFallbackAlgo arg`: Provides a list of fallback algorithms, to be used in case the default minimizer fails. You can provide multiple options using the syntax `Type[,algo],strategy[:tolerance]`: eg `--cminFallbackAlgo Minuit2,Simplex,0:0.1` will fall back to the simplex algorithm of Minuit2 with strategy 0 and a tolerance 0.1, while `--cminFallbackAlgo Minuit2,1` will use the default algorithm (Migrad) of Minuit2 with strategy 1.
@@ -101,44 +100,9 @@ The allowed combinations of minimizer types and minimizer algorithms are as foll
 |`Minuit`	      | `Migrad`, `Simplex`, `Combined`, `Scan` |
 |`Minuit2` 	      | `Migrad`, `Simplex`, `Combined`, `Scan` |
 |`GSLMultiMin`       | `ConjugateFR`, `ConjugatePR`, `BFGS`, `BFGS2`, `SteepestDescent`|
-|`Ceres`             | `TrustRegion`, `LineSearch`|
+|`Ceres`             | `TrustRegion`|
 
-You can find details about these in the Minuit2 documentation [here](https://root.cern.ch/root/htmldoc/guides/minuit2/Minuit2.html) and the Ceres Solver documentation [here](http://ceres-solver.org).
-
-For example, to select Ceres at runtime run:
-
-```
-combine datacard.root --cminCeresAlgo 0
-```
-
-Alternatively use the shortcut `--cminUseCeres` to select the Ceres minimizer with the default TrustRegion algorithm.
-
-Additional flags allow direct control over the Ceres solver:
-
-* `--cminCeresMaxIterations arg`: maximum number of Ceres iterations (default 1000).
-* `--cminCeresLinearSolver arg`: choose the linear solver (`dense_qr`, `dense_normal_cholesky`, `iterative_schur`, `sparse_normal_cholesky`, `dense_schur`, `sparse_schur`).
-* `--cminCeresVerbose`: print the full Ceres summary to the log.
-* `--cminCeresMultiStart arg`: run the minimizer multiple times with randomised starting values and keep the best fit (useful for very flat likelihoods).
-* `--cminCeresJitter arg`: scale of the randomised starting point jitter used when `--cminCeresMultiStart` > 1 (default 1).
-* `--cminCeresNumThreads arg`: number of threads to use inside the Ceres solver (default 1).
-* `--cminCeresRandomSeed arg`: seed controlling the randomisation used for multi-start (default 12345).
-* `--cminCeresFunctionTolerance arg`: function tolerance passed to Ceres.
-* `--cminCeresGradientTolerance arg`: gradient tolerance passed to Ceres.
-* `--cminCeresParameterTolerance arg`: parameter tolerance passed to Ceres.
-* `--cminCeresNumericDiffStep arg`: step size used for numeric differentiation when gradients are unavailable.
-* `--cminCeresDiffMethod arg`: choose `forward` or `central` numeric differentiation.
-* `--cminCeresLossFunction arg`: optional loss function (`none`, `huber`, `cauchy`).
-* `--cminCeresLossScale arg`: scale parameter for the Huber or Cauchy loss (default 1).
-* `--cminCeresInitialRadius arg`: initial trust region radius.
-* `--cminCeresLogFile arg`: file path to append the full Ceres solver summary.
-* `--cminCeresUseNumericGradient`: force numeric derivatives even when analytic gradients are available.
-* `--cminCeresProgress`: print iteration progress to stdout.
-* `--cminCeresMaxTime arg`: maximum wall-clock time for the solver in seconds (0 disables).
-* `--cminCeresJitterDist arg`: choose jitter distribution `uniform` or `gaussian`.
-* `--cminCeresBoundRelax arg`: relax parameter bounds by this amount.
-* `--cminCeresAutoThreads`: use hardware concurrency if thread count not specified.
-
-Ceres will fall back to numerical derivatives if an analytic gradient is not provided by the likelihood function.
+You can find details about these in the Minuit2 documentation [here](https://root.cern.ch/root/htmldoc/guides/minuit2/Minuit2.html).
 
 More of these options can be found in the **Cascade Minimizer options** section when running `--help`.
 
