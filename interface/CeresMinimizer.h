@@ -2,9 +2,13 @@
 #define HiggsAnalysis_CombinedLimit_CeresMinimizer_h
 
 #include <Math/Minimizer.h>
+#include <Fit/ParameterSettings.h>
 #if __has_include(<Math/IGradientFunctionMultiDim.h>)
 #include <Math/IGradientFunctionMultiDim.h>
 using RootIMultiGradFunction = ROOT::Math::IGradientFunctionMultiDim;
+#elif __has_include(<Math/IFunction.h>)
+#include <Math/IFunction.h>
+using RootIMultiGradFunction = ROOT::Math::IMultiGradFunction;
 #else
 #include <Math/IMultiGradFunction.h>
 using RootIMultiGradFunction = ROOT::Math::IMultiGradFunction;
