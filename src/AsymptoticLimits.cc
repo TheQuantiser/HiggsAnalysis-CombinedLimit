@@ -625,7 +625,7 @@ float AsymptoticLimits::findExpectedLimitFromCrossing(
     minim.minimize(verbose - 2);
     sentry.clear();
     std::string minAlgo = ROOT::Math::MinimizerOptions::DefaultMinimizerType() == std::string("Ceres")
-                              ? CascadeMinimizer::defaultMinimizerType_ + "," + CascadeMinimizer::defaultMinimizerAlgo_
+                              ? minim.type() + "," + minim.algo()
                               : ROOT::Math::MinimizerOptions::DefaultMinimizerType() + "," +
                                     ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
     Significance::MinimizerSentry minimizerConfig(minAlgo, ROOT::Math::MinimizerOptions::DefaultTolerance());
