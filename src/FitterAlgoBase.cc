@@ -14,6 +14,7 @@
 #include "RooConstVar.h"
 #include "RooCategory.h"
 #include "RooPlot.h"
+#include <string>
 //#include "../interface/RooMinimizerOpt.h"
 #include "RooMinimizer.h"
 #include "TCanvas.h"
@@ -335,9 +336,9 @@ RooFitResult *FitterAlgoBase::doFit(RooAbsPdf &pdf, RooAbsData &data, const RooA
 	
         double r0 = r.getVal(), rMin = r.getMin(), rMax = r.getMax();
 
-       if (!robustFit_) {
+       if (!robustFit_ && ROOT::Math::MinimizerOptions::DefaultMinimizerType() != std::string("Ceres")) {
             if (do95_) {
-	    	int badFitResult = -1;
+                int badFitResult = -1;
                 throw std::runtime_error("95% CL uncertainties with Minos are not working at the moment.");
                 minim.setErrorLevel(delta95);
                 minim.improve(verbose-1);
@@ -348,24 +349,29 @@ RooFitResult *FitterAlgoBase::doFit(RooAbsPdf &pdf, RooAbsData &data, const RooA
                 minim.setErrorLevel(delta68);
                 minim.improve(verbose-1);
             }
-            if (verbose) { 
-	    	//std::cout << "Running Minos for POI " << std::endl;
-		    CombineLogger::instance().log("FitterAlgoBase.cc",__LINE__,std::string(Form("Running Minos for POI %s",r.GetName())),__func__);
-	    }
+            if (verbose) {
+                CombineLogger::instance().log("FitterAlgoBase.cc",__LINE__,std::string(Form("Running Minos for POI %s",r.GetName())),__func__);
+            }
             minim.minimizer().setPrintLevel(2);
             if (verbose>1) {tw.Reset(); tw.Start();}
             if (minim.minos(RooArgSet(r))) {
-               if (verbose>1)CombineLogger::instance().log("FitterAlgoBase.cc",__LINE__,std::string(Form("Run Minos in %f seconds (%f CPU time)",tw.RealTime(),tw.CpuTime() )),__func__); 
+               if (verbose>1)CombineLogger::instance().log("FitterAlgoBase.cc",__LINE__,std::string(Form("Run Minos in %f seconds (%f CPU time)",tw.RealTime(),tw.CpuTime() )),__func__);
                rf.setRange("err68", r.getVal() + r.getAsymErrorLo(), r.getVal() + r.getAsymErrorHi());
                rf.setAsymError(r.getAsymErrorLo(), r.getAsymErrorHi());
             }
+       } else if (!robustFit_) {
+            if (verbose) {
+                CombineLogger::instance().log("FitterAlgoBase.cc",__LINE__,std::string(Form("Skipping Minos for POI %s with Ceres minimizer",r.GetName())),__func__);
+            }
+            rf.setRange("err68", r.getVal() - r.getError(), r.getVal() + r.getError());
+            rf.setAsymError(-r.getError(), r.getError());
        } else {
             r.setVal(r0); r.setConstant(true);
 
-            if (verbose) { 
-	    	//std::cout << "Robus Fit for POI " << std::endl;
-		    CombineLogger::instance().log("FitterAlgoBase.cc",__LINE__,std::string(Form("Running RobustFit for POI %s. Configured with strategy %d  ",r.GetName(), minimizerStrategyForMinos_)),__func__);
-	    }
+            if (verbose) {
+                //std::cout << "Robus Fit for POI " << std::endl;
+                    CombineLogger::instance().log("FitterAlgoBase.cc",__LINE__,std::string(Form("Running RobustFit for POI %s. Configured with strategy %d  ",r.GetName(), minimizerStrategyForMinos_)),__func__);
+            }
  
             CascadeMinimizer minim2(*nll, CascadeMinimizer::Constrained);
             minim2.setStrategy(minimizerStrategyForMinos_);
