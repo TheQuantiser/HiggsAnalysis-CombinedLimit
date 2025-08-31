@@ -41,6 +41,7 @@ and `--cminCeresUseNumericGradient` forces Ceres to approximate derivatives even
 chooses between uniform and Gaussian perturbations, `--cminCeresBoundRelax` slightly enlarges parameter bounds, and
 `--cminCeresAutoThreads` uses all available CPU cores when thread count is not specified.
 
+Multi-start jitter and numeric derivatives can help stabilise fits with flat likelihood surfaces such as those involving many transfer factors.
 Linking against Ceres requires the development packages for the solver to be installed and discoverable by CMake.
 
 ### Publication 
