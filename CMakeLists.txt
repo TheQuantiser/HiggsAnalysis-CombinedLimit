@@ -18,6 +18,7 @@ find_package(Eigen3 REQUIRED)
 find_package(Vdt)
 find_package(LCG QUIET) # only used for FindBoost in StatAnalysis
 find_package(Boost CONFIG REQUIRED COMPONENTS program_options filesystem)
+find_package(Ceres)
 
 message(STATUS "Using ROOT From: ${ROOT_INCLUDE_DIRS}")
 include(${ROOT_USE_FILE})
@@ -52,6 +53,16 @@ endif()
 
 add_executable(combine bin/combine.cpp)
 target_link_libraries(combine PUBLIC ${LIBNAME})
+
+if(Ceres_FOUND)
+  message(STATUS "Found Ceres - building CeresMinimizer plugin")
+  add_library(CeresMinimizer SHARED ceres/CeresMinimizer.cc)
+  target_link_libraries(CeresMinimizer PUBLIC ${ROOT_LIBRARIES} Ceres::ceres)
+  target_include_directories(CeresMinimizer PUBLIC ${Ceres_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/interface)
+  install(TARGETS CeresMinimizer LIBRARY DESTINATION lib)
+else()
+  message(STATUS "Ceres not found - CeresMinimizer plugin will be unavailable")
+endif()
 
 if(MODIFY_ROOTMAP)
         # edit the generated rootmap in-situ before installation

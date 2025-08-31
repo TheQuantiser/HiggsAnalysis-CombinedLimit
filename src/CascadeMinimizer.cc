@@ -12,6 +12,7 @@
 #include <RooNumIntConfig.h>
 #include <TStopwatch.h>
 #include <RooStats/RooStatsUtils.h>
+#include <TSystem.h>
 
 #include <iomanip>
 
@@ -33,14 +34,16 @@ float CascadeMinimizer::nuisancePruningThreshold_ = 0;
 double CascadeMinimizer::discreteMinTol_ = 0.001;
 std::string CascadeMinimizer::defaultMinimizerType_="Minuit2"; // default to minuit2 (not always the default !?)
 std::string CascadeMinimizer::defaultMinimizerAlgo_="Migrad";
-double CascadeMinimizer::defaultMinimizerTolerance_=1e-1;  
+double CascadeMinimizer::defaultMinimizerTolerance_=1e-1;
 double CascadeMinimizer::defaultMinimizerPrecision_=-1.0;
-int  CascadeMinimizer::strategy_=1; 
+int  CascadeMinimizer::strategy_=1;
+static int ceresAlgo_ = -1;
 
 std::map<std::string,std::vector<std::string> > const CascadeMinimizer::minimizerAlgoMap_{
  {"Minuit"	 ,{"Migrad","Simplex","Combined","Scan"}}
 ,{"Minuit2" 	 ,{"Migrad","Simplex","Combined","Scan"}}
 ,{"GSLMultiMin"  ,{"ConjugateFR", "ConjugatePR", "BFGS", "BFGS2", "SteepestDescent"}}
+ ,{"Ceres"        ,{"TrustRegion","LineSearch"}}
 };
 
 CascadeMinimizer::CascadeMinimizer(RooAbsReal &nll, Mode mode, RooRealVar *poi) :
@@ -718,8 +721,9 @@ void CascadeMinimizer::initOptions()
         ("cminOldRobustMinimize", boost::program_options::value<bool>(&oldFallback_)->default_value(oldFallback_), "Use the old 'robustMinimize' logic in addition to the cascade (for debug only)")
         ("cminInitialHesse", boost::program_options::value<bool>(&firstHesse_)->default_value(firstHesse_), "Call Hesse before the minimization")
         ("cminFinalHesse", boost::program_options::value<bool>(&lastHesse_)->default_value(lastHesse_), "Call Hesse after the minimization")
-	("cminDefaultMinimizerType",boost::program_options::value<std::string>(&defaultMinimizerType_)->default_value(defaultMinimizerType_), "Set the default minimizer Type")
-	("cminDefaultMinimizerAlgo",boost::program_options::value<std::string>(&defaultMinimizerAlgo_)->default_value(defaultMinimizerAlgo_), "Set the default minimizer Algo")
+        ("cminCeresAlgo", boost::program_options::value<int>(&ceresAlgo_)->default_value(ceresAlgo_), "Select Ceres algorithm: 0=TrustRegion, 1=LineSearch (implies --cminDefaultMinimizerType=Ceres)")
+        ("cminDefaultMinimizerType",boost::program_options::value<std::string>(&defaultMinimizerType_)->default_value(defaultMinimizerType_), "Set the default minimizer Type (e.g. Minuit2, Minuit, GSLMultiMin, Ceres)")
+        ("cminDefaultMinimizerAlgo",boost::program_options::value<std::string>(&defaultMinimizerAlgo_)->default_value(defaultMinimizerAlgo_), "Set the default minimizer Algo (e.g. Migrad, Simplex, TrustRegion)")
 	("cminDefaultMinimizerTolerance",boost::program_options::value<double>(&defaultMinimizerTolerance_)->default_value(defaultMinimizerTolerance_), "Set the default minimizer Tolerance")
 	("cminDefaultMinimizerPrecision",boost::program_options::value<double>(&defaultMinimizerPrecision_)->default_value(defaultMinimizerPrecision_), "Set the default minimizer precision")
 	("cminDefaultMinimizerStrategy",boost::program_options::value<int>(&strategy_)->default_value(strategy_), "Set the default minimizer (initial) strategy")
@@ -762,12 +766,28 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
     setZeroPoint_  = vm.count("cminSetZeroPoint");
     runShortCombinations = !(vm.count("cminRunAllDiscreteCombinations"));
 
+    if (vm.count("cminCeresAlgo")) {
+      defaultMinimizerType_ = "Ceres";
+      if (ceresAlgo_ == 1) {
+        defaultMinimizerAlgo_ = "LineSearch";
+      } else if (ceresAlgo_ == 0 || ceresAlgo_ == -1) {
+        defaultMinimizerAlgo_ = "TrustRegion";
+      } else {
+        std::cerr << Form("Unknown Ceres algorithm %d, defaulting to TrustRegion", ceresAlgo_) << std::endl;
+        defaultMinimizerAlgo_ = "TrustRegion";
+      }
+      gSystem->Load("libCeresMinimizer");
+    }
+
     // check default minimizer type/algo if they are set and make sense
     if (vm.count("cminDefaultMinimizerAlgo")){
       if (! checkAlgoInType(defaultMinimizerType_,defaultMinimizerAlgo_)) {
       // severe enough to print to terminal
-	    std::cerr << Form("The combination of minimizer type/algo %s/%s, is not recognized. Please set these with --cminDefaultMinimizerType and --cminDefaultMinimizerAlgo",defaultMinimizerType_.c_str(),defaultMinimizerAlgo_.c_str());
-	    exit(0);
+            std::cerr << Form("The combination of minimizer type/algo %s/%s, is not recognized. Please set these with --cminDefaultMinimizerType and --cminDefaultMinimizerAlgo",defaultMinimizerType_.c_str(),defaultMinimizerAlgo_.c_str());
+            exit(0);
+      }
+      if (defaultMinimizerType_ == "Ceres") {
+          gSystem->Load("libCeresMinimizer");
       }
     }
 
