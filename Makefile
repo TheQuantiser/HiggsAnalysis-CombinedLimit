@@ -96,7 +96,8 @@ CERES_OBJ     = $(OBJ_DIR)/CeresMinimizer.o
 CERES_INC     = $(if $(CONDA_PREFIX),-I${CONDA_PREFIX}/include,)
 CERES_LIB     = $(if $(CONDA_PREFIX),-L${CONDA_PREFIX}/lib,) -lceres -lglog -lgflags
 # glog headers from conda need explicit definitions when not using CMake
-CERES_DEFS    = -DGLOG_USE_GFLAGS -DGLOG_NO_EXPORT
+# glog >=0.7 requires explicit opt-in when consuming headers directly
+CERES_DEFS    = -DGLOG_USE_GLOG_EXPORT -DGLOG_USE_GFLAGS
 
 #Makefile Rules ---------------------------------------------------------------
 .PHONY: clean exe python
