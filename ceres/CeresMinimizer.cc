@@ -66,11 +66,13 @@ CeresMinimizer::CostFunction::CostFunction(const ROOT::Math::IMultiGradFunction 
 bool CeresMinimizer::CostFunction::Evaluate(double const* const* parameters, double *residuals, double **jacobians) const {
     const double *x = parameters[0];
     double fval = (*func)(x);
-    residuals[0] = std::sqrt(fval);
+    double safeFval = std::max(fval, 0.0);
+    double sqrtFval = std::sqrt(safeFval);
+    residuals[0] = sqrtFval;
     if (jacobians && jacobians[0]) {
         std::vector<double> grad(func->NDim());
         func->Gradient(x, &grad[0]);
-        double coeff = 0.5 / residuals[0];
+        double coeff = sqrtFval > 0 ? 0.5 / sqrtFval : 0.0;
         for (unsigned int i=0;i<func->NDim();++i) jacobians[0][i] = coeff * grad[i];
     }
     return true;
@@ -79,7 +81,8 @@ bool CeresMinimizer::CostFunction::Evaluate(double const* const* parameters, dou
 struct NoGradFunctor {
     explicit NoGradFunctor(const ROOT::Math::IMultiGenFunction *f) : func(f) {}
     bool operator()(const double * const x, double *residuals) const {
-        residuals[0] = std::sqrt((*func)(x));
+        double fval = (*func)(x);
+        residuals[0] = std::sqrt(std::max(fval, 0.0));
         return true;
     }
     const ROOT::Math::IMultiGenFunction *func;
