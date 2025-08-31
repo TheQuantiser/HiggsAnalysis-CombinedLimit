@@ -34,7 +34,7 @@ void CeresMinimizer::Clear() {
 
 void CeresMinimizer::SetFunction(const ROOT::Math::IMultiGenFunction &func) {
     func_ = &func;
-    gradFunc_ = dynamic_cast<const ROOT::Math::IMultiGradFunction*>(func_);
+    gradFunc_ = dynamic_cast<const RootIMultiGradFunction*>(func_);
     nDim_ = func.NDim();
     nFree_ = nDim_;
     x_.assign(nDim_,0.0);
@@ -59,7 +59,7 @@ bool CeresMinimizer::SetFixedVariable(unsigned int i, const std::string &, doubl
     x_[i]=val; isFixed_[i]=true; nFree_--; return true;
 }
 
-CeresMinimizer::CostFunction::CostFunction(const ROOT::Math::IMultiGradFunction *f) : func(f) {
+CeresMinimizer::CostFunction::CostFunction(const RootIMultiGradFunction *f) : func(f) {
     set_num_residuals(1);
     mutable_parameter_block_sizes()->push_back(f->NDim());
 }

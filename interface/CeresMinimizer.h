@@ -2,7 +2,13 @@
 #define HiggsAnalysis_CombinedLimit_CeresMinimizer_h
 
 #include <Math/Minimizer.h>
+#if __has_include(<Math/IGradientFunctionMultiDim.h>)
+#include <Math/IGradientFunctionMultiDim.h>
+using RootIMultiGradFunction = ROOT::Math::IGradientFunctionMultiDim;
+#else
 #include <Math/IMultiGradFunction.h>
+using RootIMultiGradFunction = ROOT::Math::IMultiGradFunction;
+#endif
 #include <ceres/ceres.h>
 #include <string>
 #include <vector>
@@ -51,13 +57,13 @@ private:
     void ComputeGradientAndHessian(const double *x);
 
     struct CostFunction : public ceres::CostFunction {
-        CostFunction(const ROOT::Math::IMultiGradFunction *f);
+        CostFunction(const RootIMultiGradFunction *f);
         bool Evaluate(double const* const* parameters, double *residuals, double **jacobians) const override;
-        const ROOT::Math::IMultiGradFunction *func;
+        const RootIMultiGradFunction *func;
     };
 
     const ROOT::Math::IMultiGenFunction *func_;
-    const ROOT::Math::IMultiGradFunction *gradFunc_;
+    const RootIMultiGradFunction *gradFunc_;
     unsigned int nDim_;
     unsigned int nFree_;
     unsigned int nCalls_;
