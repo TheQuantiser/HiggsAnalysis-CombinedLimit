@@ -144,7 +144,7 @@ bool MarkovChainMC::run(RooWorkspace *w, RooStats::ModelConfig *mc_s, RooStats::
 
   double suma = 0; int num = 0;
   double savhint = (hint ? *hint : -1); const double *thehint = hint;
-  std::vector<double> limits;
+  std::vector<float> limits;
   if (readChains_)  {
       readChains(*mc_s->GetParametersOfInterest(), limits);
   } else {
@@ -345,8 +345,8 @@ int MarkovChainMC::runOnce(RooWorkspace *w, RooStats::ModelConfig *mc_s, RooStat
   }
 }
 
-void MarkovChainMC::limitAndError(double &limit, double &limitErr, const std::vector<double> &limitsIn) const {
-  std::vector<double> limits(limitsIn);
+void MarkovChainMC::limitAndError(double &limit, double &limitErr, const std::vector<float> &limitsIn) const {
+  std::vector<float> limits(limitsIn);
   int num = limits.size();
   // possibly remove outliers before computing mean
   if (adaptiveTruncation_ && num >= 10) {
@@ -378,7 +378,7 @@ void MarkovChainMC::limitAndError(double &limit, double &limitErr, const std::ve
 #endif
   } else {
       int noutl = floor(truncatedMeanFraction_ * num);
-      if (noutl >= 1) { 
+      if (noutl >= 1) {
           std::sort(limits.begin(), limits.end());
           double median = (num % 2 ? limits[num/2] : 0.5*(limits[num/2] + limits[num/2+1]));
           for (int k = 0; k < noutl; ++k) {
@@ -398,9 +398,9 @@ void MarkovChainMC::limitAndError(double &limit, double &limitErr, const std::ve
   }
 }
 
-RooStats::MarkovChain *MarkovChainMC::mergeChains(const RooArgSet &poi, const std::vector<double> &limits) const
+RooStats::MarkovChain *MarkovChainMC::mergeChains(const RooArgSet &poi, const std::vector<float> &limits) const
 {
-    std::vector<double> limitsSorted(limits); std::sort(limitsSorted.begin(), limitsSorted.end());
+    std::vector<float> limitsSorted(limits); std::sort(limitsSorted.begin(), limitsSorted.end());
     double lmin = limitsSorted.front(), lmax = limitsSorted.back();
     if (limitsSorted.size() > 5) {
         int n = limitsSorted.size();
@@ -431,7 +431,7 @@ RooStats::MarkovChain *MarkovChainMC::mergeChains(const RooArgSet &poi, const st
     return merged;
 }
 
-void MarkovChainMC::readChains(const RooArgSet &poi, std::vector<double> &limits)
+void MarkovChainMC::readChains(const RooArgSet &poi, std::vector<float> &limits)
 {
     double mylim, myerr;
     chains_.Clear();
@@ -507,7 +507,7 @@ int
 MarkovChainMC::guessBurnInSteps(const RooStats::MarkovChain &chain) const
 {
     int n = chain.Size();
-    std::vector<double> nll(n);
+    std::vector<float> nll(n);
     for (int i = 0; i < n; ++i) {
         nll[i] = chain.NLL(i);
     }
@@ -532,7 +532,7 @@ int
 MarkovChainMC::stationarityTest(const RooStats::MarkovChain &chain, const RooArgSet &poi, int nchunks) const 
 {
     std::vector<int>    entries(nchunks, 0);
-    std::vector<double> mean(nchunks, .0);
+    std::vector<float> mean(nchunks, .0f);
     const RooDataSet *data = chain.GetAsConstDataSet();
     const RooRealVar *r = dynamic_cast<const RooRealVar *>(data->get()->find(poi.first()->GetName()));
     int  n = data->numEntries(), chunksize = ceil(n/double(nchunks));
@@ -544,7 +544,7 @@ MarkovChainMC::stationarityTest(const RooStats::MarkovChain &chain, const RooArg
     }
     for (int c = 0; c < nchunks; ++c) { mean[c] /= entries[c]; }
 
-    std::vector<double> dists, dists25;
+    std::vector<float> dists, dists25;
     for (int c = 0; c < nchunks; ++c) {
         for (int c2 = 0; c2 < nchunks; ++c2) {
             if (c2 != c) dists.push_back(fabs(mean[c]-mean[c2]));
