@@ -116,7 +116,8 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
 }
 
 struct NumericCostFunction : public ceres::CostFunction {
-  NumericCostFunction(const ROOT::Math::IMultiGenFunction *f, double step) : func(f), step(step) {
+  NumericCostFunction(const ROOT::Math::IMultiGenFunction *f, double step, bool central)
+      : func(f), step(step), useCentral(central) {
     set_num_residuals(1);
     mutable_parameter_block_sizes()->push_back(f->NDim());
   }
@@ -131,18 +132,26 @@ struct NumericCostFunction : public ceres::CostFunction {
       std::copy(x, x + func->NDim(), xtmp.begin());
       double coeff = sqrtFval > 0 ? 0.5 / sqrtFval : 0.0;
       for (unsigned int i = 0; i < func->NDim(); ++i) {
-        xtmp[i] += step;
-        double fp = (*func)(xtmp.data());
-        xtmp[i] -= 2 * step;
-        double fm = (*func)(xtmp.data());
-        jacobians[0][i] = coeff * (fp - fm) / (2 * step);
-        xtmp[i] = x[i];
+        if (useCentral) {
+          xtmp[i] += step;
+          double fp = (*func)(xtmp.data());
+          xtmp[i] -= 2 * step;
+          double fm = (*func)(xtmp.data());
+          jacobians[0][i] = coeff * (fp - fm) / (2 * step);
+          xtmp[i] = x[i];
+        } else {
+          xtmp[i] += step;
+          double fp = (*func)(xtmp.data());
+          jacobians[0][i] = coeff * (fp - fval) / step;
+          xtmp[i] = x[i];
+        }
       }
     }
     return true;
   }
   const ROOT::Math::IMultiGenFunction *func;
   double step;
+  bool useCentral;
 };
 
 bool CeresMinimizer::Minimize() {
@@ -195,6 +204,8 @@ bool CeresMinimizer::Minimize() {
   if (numericStep <= 0)
     numericStep = 1e-4;
   numDiffStep_ = numericStep;
+  std::string diffMethod = std::getenv("CERES_DIFF_METHOD") ? std::getenv("CERES_DIFF_METHOD") : std::string("central");
+  bool centralDiff = (diffMethod != "forward");
   std::string lossStr = std::getenv("CERES_LOSS_FUNCTION") ? std::getenv("CERES_LOSS_FUNCTION") : std::string("none");
   double initRadius = 1.0;
   if (const char *env = std::getenv("CERES_INITIAL_RADIUS"))
@@ -243,7 +254,7 @@ bool CeresMinimizer::Minimize() {
     if (gradFunc_ && !forceNumeric)
       cost = new CostFunction(gradFunc_);
     else
-      cost = new NumericCostFunction(func_, numericStep);
+      cost = new NumericCostFunction(func_, numericStep, centralDiff);
     ceres::LossFunction *loss = nullptr;
     if (lossStr == "huber")
       loss = new ceres::HuberLoss(lossScale);
