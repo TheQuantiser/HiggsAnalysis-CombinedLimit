@@ -2,11 +2,16 @@
 #define HiggsAnalysis_CombinedLimit_CeresMinimizer_h
 
 #include <Math/Minimizer.h>
+// ROOT renamed IMultiGradFunction to IGradientFunctionMultiDim in newer versions,
+// while very old releases provided IMultiGradFunction only through IFunction.h.
 #if __has_include(<Math/IGradientFunctionMultiDim.h>)
 #include <Math/IGradientFunctionMultiDim.h>
 using RootIMultiGradFunction = ROOT::Math::IGradientFunctionMultiDim;
-#else
+#elif __has_include(<Math/IMultiGradFunction.h>)
 #include <Math/IMultiGradFunction.h>
+using RootIMultiGradFunction = ROOT::Math::IMultiGradFunction;
+#else
+#include <Math/IFunction.h>
 using RootIMultiGradFunction = ROOT::Math::IMultiGradFunction;
 #endif
 #include <ceres/ceres.h>
