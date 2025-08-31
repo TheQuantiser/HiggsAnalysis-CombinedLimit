@@ -44,12 +44,12 @@ using namespace RooStats;
 //std::string FitterAlgoBase::minimizerAlgo_ = "Minuit2";
 std::string FitterAlgoBase::minimizerAlgoForMinos_ = "";
 //float       FitterAlgoBase::minimizerTolerance_ = 1e-1;
-float FitterAlgoBase::minimizerToleranceForMinos_ = 1e-1;
-float FitterAlgoBase::crossingTolerance_ = 1e-4;
+double FitterAlgoBase::minimizerToleranceForMinos_ = 1e-1;
+double FitterAlgoBase::crossingTolerance_ = 1e-4;
 //int         FitterAlgoBase::minimizerStrategy_  = 1;
 int FitterAlgoBase::minimizerStrategyForMinos_ = 0;  // also default from CascadeMinimizer
-float FitterAlgoBase::preFitValue_ = 1.0;
-float FitterAlgoBase::stepSize_ = 0.1;
+double FitterAlgoBase::preFitValue_ = 1.0;
+double FitterAlgoBase::stepSize_ = 0.1;
 bool FitterAlgoBase::robustFit_ = false;
 int FitterAlgoBase::maxFailedSteps_ = 5;
 bool FitterAlgoBase::do95_ = false;
@@ -69,7 +69,7 @@ FitterAlgoBase::FitterAlgoBase(const char *title) : LimitAlgo(title) {
       //("minimizerTolerance", boost::program_options::value<float>(&minimizerTolerance_)->default_value(minimizerTolerance_),  "Tolerance for minimizer")
       //("minimizerStrategy",  boost::program_options::value<int>(&minimizerStrategy_)->default_value(minimizerStrategy_),      "Stragegy for minimizer")
       ("preFitValue",
-       boost::program_options::value<float>(&preFitValue_)->default_value(preFitValue_),
+       boost::program_options::value<double>(&preFitValue_)->default_value(preFitValue_),
        "Value of signal strength pre-fit, also used for pre-fit plots, normalizations and uncertainty calculations "
        "(note this overrides --expectSignal for these features)")(
           "do95",
@@ -82,7 +82,7 @@ FitterAlgoBase::FitterAlgoBase(const char *title) : LimitAlgo(title) {
           boost::program_options::value<int>(&maxFailedSteps_)->default_value(maxFailedSteps_),
           "How many failed steps to retry before giving up")(
           "stepSize",
-          boost::program_options::value<float>(&stepSize_)->default_value(stepSize_),
+          boost::program_options::value<double>(&stepSize_)->default_value(stepSize_),
           "Step size for robust fits (multiplier of the range)")(
           "setRobustFitAlgo",
           boost::program_options::value<std::string>(&minimizerAlgoForMinos_)->default_value(minimizerAlgoForMinos_),
@@ -91,10 +91,10 @@ FitterAlgoBase::FitterAlgoBase(const char *title) : LimitAlgo(title) {
           boost::program_options::value<int>(&minimizerStrategyForMinos_)->default_value(minimizerStrategyForMinos_),
           "Stragegy for minimizer for profiling in robust fits")(
           "setRobustFitTolerance",
-          boost::program_options::value<float>(&minimizerToleranceForMinos_)->default_value(minimizerToleranceForMinos_),
+          boost::program_options::value<double>(&minimizerToleranceForMinos_)->default_value(minimizerToleranceForMinos_),
           "Tolerance for minimizer for profiling in robust fits")(
           "setCrossingTolerance",
-          boost::program_options::value<float>(&crossingTolerance_)->default_value(crossingTolerance_),
+          boost::program_options::value<double>(&crossingTolerance_)->default_value(crossingTolerance_),
           "Tolerance for finding the NLL crossing in robust fits")(
           "profilingMode",
           boost::program_options::value<std::string>()->default_value("all"),

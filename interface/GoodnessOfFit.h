@@ -35,13 +35,13 @@ protected:
 //  static float       minimizerTolerance_;
 //  static int         minimizerStrategy_;
 
-  static float mu_;
+  static double mu_;
   static bool  fixedMu_;
 
   static bool  makePlots_;
   static TDirectory *plotDir_;
   static std::vector<std::string>  binNames_;
-  static std::vector<float>        qVals_;
+  static std::vector<double>       qVals_;
 
   static std::string setParametersForFit_;
   static std::string setParametersForEval_;

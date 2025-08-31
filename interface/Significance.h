@@ -36,7 +36,7 @@ protected:
   //static std::string minimizerAlgo_, 
   static std::string minimizerAlgoForBF_;
   //static float       minimizerTolerance_, 
-  static float minimizerToleranceForBF_;
+  static double minimizerToleranceForBF_;
 
   static bool useMinos_, bruteForce_;
   static std::string bfAlgo_;
@@ -48,9 +48,9 @@ protected:
   /// trying up to M times from different points
   static int         maxTries_;
   /// maximum relative deviation of the different points from the median to accept 
-  static float       maxRelDeviation_;
+  static double      maxRelDeviation_;
   /// Ignore up to this fraction of results if they're too far from the median
-  static float       maxOutlierFraction_;
+  static double      maxOutlierFraction_;
   /// Stop trying after finding N outliers
   static int         maxOutliers_;
   /// Try first a plain fit
@@ -60,8 +60,8 @@ protected:
   static bool reportPVal_;
   static bool uncapped_;
 
-  static float signalForSignificance_;
-  static float mass_;
+  static double signalForSignificance_;
+  static double mass_;
 
   static std::string plot_;
 

@@ -22,7 +22,7 @@ using namespace RooStats;
 int BayesianToyMC::numIters_ = 1000;
 std::string BayesianToyMC::integrationType_ = "toymc";
 unsigned int BayesianToyMC::tries_ = 1;
-float BayesianToyMC::hintSafetyFactor_ = 5.;
+double BayesianToyMC::hintSafetyFactor_ = 5.;
 std::vector<std::string> BayesianToyMC::twoPoints_;
 
 BayesianToyMC::BayesianToyMC() :
@@ -33,7 +33,7 @@ BayesianToyMC::BayesianToyMC() :
         ("tries",      boost::program_options::value<unsigned int>(&tries_)->default_value(tries_), "Number of times to run the ToyMC on the same data")
         ("numIters,i", boost::program_options::value<int>(&numIters_)->default_value(numIters_),    "Number of iterations or calls used within iteration (0=ROOT Default)")
         ("hintSafetyFactor",
-                boost::program_options::value<float>(&hintSafetyFactor_)->default_value(hintSafetyFactor_),
+                boost::program_options::value<double>(&hintSafetyFactor_)->default_value(hintSafetyFactor_),
                 "Set range of integration equal to this number of times the hinted limit")
         ("twoPoints",
                 boost::program_options::value<std::vector<std::string> >(&twoPoints_)->multitoken(), "Compute BF comparing two points in parameter space");

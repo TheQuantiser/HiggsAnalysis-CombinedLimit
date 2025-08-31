@@ -30,11 +30,11 @@ using namespace std;
 //std::string Significance::minimizerAlgo_ = "Minuit2";
 std::string Significance::minimizerAlgoForBF_ = "Minuit2,simplex";
 //float       Significance::minimizerTolerance_ = 1e-2;
-float Significance::minimizerToleranceForBF_ = 1e-4;
+double Significance::minimizerToleranceForBF_ = 1e-4;
 int Significance::tries_ = 1;
 int Significance::maxTries_ = 1;
-float Significance::maxRelDeviation_ = 0.05;
-float Significance::maxOutlierFraction_ = 0.25;
+double Significance::maxRelDeviation_ = 0.05;
+double Significance::maxOutlierFraction_ = 0.25;
 int Significance::maxOutliers_ = 3;
 int Significance::points_ = 20;
 bool Significance::preFit_ = false;
@@ -43,8 +43,8 @@ bool Significance::bruteForce_ = false;
 std::string Significance::bfAlgo_ = "scale";
 bool Significance::reportPVal_ = false;
 bool Significance::uncapped_ = false;
-float Significance::signalForSignificance_ = 0;
-float Significance::mass_;
+double Significance::signalForSignificance_ = 0;
+double Significance::mass_;
 std::string Significance::plot_ = "";
 
 Significance::Significance() : LimitAlgo("Significance specific options") {
@@ -58,13 +58,13 @@ Significance::Significance() : LimitAlgo("Significance specific options") {
           boost::program_options::value<int>(&maxTries_)->default_value(maxTries_),
           "Stop trying after N attempts per point")(
           "maxRelDeviation",
-          boost::program_options::value<float>(&maxRelDeviation_)->default_value(maxOutlierFraction_),
+          boost::program_options::value<double>(&maxRelDeviation_)->default_value(maxOutlierFraction_),
           "Max absolute deviation of the results from the median")(
           "maxOutlierFraction",
-          boost::program_options::value<float>(&maxOutlierFraction_)->default_value(maxOutlierFraction_),
+          boost::program_options::value<double>(&maxOutlierFraction_)->default_value(maxOutlierFraction_),
           "Ignore up to this fraction of results if they're too far from the median")(
           "signalForSignificance",
-          boost::program_options::value<float>(&signalForSignificance_)->default_value(signalForSignificance_),
+          boost::program_options::value<double>(&signalForSignificance_)->default_value(signalForSignificance_),
           "Signal strength used when computing significances (default is zero, just background)")(
           "maxOutliers",
           boost::program_options::value<int>(&maxOutliers_)->default_value(maxOutliers_),
@@ -89,7 +89,7 @@ Significance::Significance() : LimitAlgo("Significance specific options") {
           boost::program_options::value<std::string>(&minimizerAlgoForBF_)->default_value(minimizerAlgoForBF_),
           "Choice of minimizer for brute-force search (default is Minuit2,simplex)")(
           "setBruteForceTolerance",
-          boost::program_options::value<float>(&minimizerToleranceForBF_)->default_value(minimizerToleranceForBF_),
+          boost::program_options::value<double>(&minimizerToleranceForBF_)->default_value(minimizerToleranceForBF_),
           "Tolerance for minimizer when doing brute-force search");
 }
 
@@ -102,7 +102,7 @@ void Significance::applyOptions(const boost::program_options::variables_map &vm)
     useMinos_ = true;
   bruteForce_ = vm.count("bruteForce");
   reportPVal_ = vm.count("pvalue");
-  mass_ = vm["mass"].as<float>();
+  mass_ = vm["mass"].as<double>();
 }
 
 Significance::MinimizerSentry::MinimizerSentry(const std::string &minimizerAlgo, double tolerance)

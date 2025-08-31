@@ -39,12 +39,12 @@ std::string GoodnessOfFit::algo_;
 //std::string GoodnessOfFit::minimizerAlgo_ = "Minuit2";
 //float       GoodnessOfFit::minimizerTolerance_ = 1e-4;
 //int         GoodnessOfFit::minimizerStrategy_  = 1;
-float       GoodnessOfFit::mu_ = 0.0;
+double      GoodnessOfFit::mu_ = 0.0;
 bool        GoodnessOfFit::fixedMu_ = false;
 bool        GoodnessOfFit::makePlots_ = false;
 TDirectory* GoodnessOfFit::plotDir_ = nullptr;
 std::vector<std::string>  GoodnessOfFit::binNames_;
-std::vector<float>        GoodnessOfFit::qVals_;
+std::vector<double>       GoodnessOfFit::qVals_;
 std::string GoodnessOfFit::setParametersForFit_ = "";
 std::string GoodnessOfFit::setParametersForEval_ = "";
 
@@ -58,7 +58,7 @@ GoodnessOfFit::GoodnessOfFit() :
   //      ("minimizerAlgo",      boost::program_options::value<std::string>(&minimizerAlgo_)->default_value(minimizerAlgo_), "Choice of minimizer (Minuit vs Minuit2)")
   //      ("minimizerTolerance", boost::program_options::value<float>(&minimizerTolerance_)->default_value(minimizerTolerance_),  "Tolerance for minimizer")
   //      ("minimizerStrategy",  boost::program_options::value<int>(&minimizerStrategy_)->default_value(minimizerStrategy_),      "Stragegy for minimizer")
-        ("fixedSignalStrength", boost::program_options::value<float>(&mu_)->default_value(mu_),  "Compute the goodness of fit for a fixed signal strength. If not specified, it is left floating")
+        ("fixedSignalStrength", boost::program_options::value<double>(&mu_)->default_value(mu_),  "Compute the goodness of fit for a fixed signal strength. If not specified, it is left floating")
         ("plots",  "Make plots containing information of the computation of the Anderson-Darling or Kolmogorov-Smirnov test statistic")
     ;
 }
@@ -114,7 +114,7 @@ void GoodnessOfFit::initKSandAD(RooStats::ModelConfig *mc_s) {
       cat->setBin(i);
       binNames_[i] = cat->getLabel();
       qVals_[i] = 0.;
-      Combine::addBranch(binNames_[i].c_str(), &qVals_[i], (binNames_[i]+"/F").c_str());
+      Combine::addBranch(binNames_[i].c_str(), &qVals_[i], (binNames_[i]+"/D").c_str());
     }
   }
 }

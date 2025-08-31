@@ -31,15 +31,15 @@ protected:
   //static std::string minimizerAlgo_, 
   static std::string minimizerAlgoForMinos_;
   //static float       minimizerTolerance_, 
-  static float 	     minimizerToleranceForMinos_;
-  static float 	     crossingTolerance_;
+  static double      minimizerToleranceForMinos_;
+  static double      crossingTolerance_;
   //static int         minimizerStrategy_, 
   static int 	     minimizerStrategyForMinos_;
 
-  static float preFitValue_;
+  static double preFitValue_;
 
   static bool robustFit_, do95_, forceRecreateNLL_;
-  static float stepSize_;
+  static double stepSize_;
   static int   maxFailedSteps_;
 
   enum ProfilingMode { ProfileAll, ProfileUnconstrained, ProfilePOI, NoProfiling };

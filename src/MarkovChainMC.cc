@@ -39,20 +39,20 @@ bool MarkovChainMC::updateProposalParams_ = false;
 bool MarkovChainMC::updateHint_ = false;
 unsigned int MarkovChainMC::iterations_ = 10000;
 unsigned int MarkovChainMC::burnInSteps_ = 200;
-float MarkovChainMC::burnInFraction_ = 0.25;
+double MarkovChainMC::burnInFraction_ = 0.25;
 bool  MarkovChainMC::adaptiveBurnIn_ = false;
 unsigned int MarkovChainMC::tries_ = 10;
-float MarkovChainMC::truncatedMeanFraction_ = 0.0;
+double MarkovChainMC::truncatedMeanFraction_ = 0.0;
 bool MarkovChainMC::adaptiveTruncation_ = true;
-float MarkovChainMC::hintSafetyFactor_ = 5.;
+double MarkovChainMC::hintSafetyFactor_ = 5.;
 bool MarkovChainMC::saveChain_ = false;
 bool MarkovChainMC::noSlimChain_ = false;
 bool MarkovChainMC::mergeChains_ = false;
 bool MarkovChainMC::readChains_ = false;
-float MarkovChainMC::proposalHelperWidthRangeDivisor_ = 5.;
-float MarkovChainMC::proposalHelperUniformFraction_ = 0.0;
+double MarkovChainMC::proposalHelperWidthRangeDivisor_ = 5.;
+double MarkovChainMC::proposalHelperUniformFraction_ = 0.0;
 bool  MarkovChainMC::alwaysStepPoi_ = true;
-float MarkovChainMC::cropNSigmas_ = 0;
+double MarkovChainMC::cropNSigmas_ = 0;
 int   MarkovChainMC::debugProposal_ = false;
 std::vector<std::string> MarkovChainMC::discreteModelPoints_;
 
@@ -63,7 +63,7 @@ MarkovChainMC::MarkovChainMC() :
         ("iteration,i", boost::program_options::value<unsigned int>(&iterations_)->default_value(iterations_), "Number of iterations")
         ("tries", boost::program_options::value<unsigned int>(&tries_)->default_value(tries_), "Number of times to run the MCMC on the same data")
         ("burnInSteps,b", boost::program_options::value<unsigned int>(&burnInSteps_)->default_value(burnInSteps_), "Burn in steps (absolute number)")
-        ("burnInFraction", boost::program_options::value<float>(&burnInFraction_)->default_value(burnInFraction_), "Burn in steps (fraction of total accepted steps)")
+        ("burnInFraction", boost::program_options::value<double>(&burnInFraction_)->default_value(burnInFraction_), "Burn in steps (fraction of total accepted steps)")
         ("adaptiveBurnIn", boost::program_options::value<bool>(&adaptiveBurnIn_)->default_value(adaptiveBurnIn_), "Adaptively determine burn in steps (experimental!).")
         ("proposal", boost::program_options::value<std::string>(&proposalTypeName_)->default_value(proposalTypeName_), 
                               "Proposal function to use: 'fit', 'uniform', 'gaus', 'ortho' (also known as 'test')")
@@ -74,24 +74,24 @@ MarkovChainMC::MarkovChainMC() :
                 boost::program_options::value<bool>(&updateProposalParams_)->default_value(updateProposalParams_), 
                 "Control ProposalHelper::SetUpdateProposalParameters")
         ("propHelperWidthRangeDivisor", 
-                boost::program_options::value<float>(&proposalHelperWidthRangeDivisor_)->default_value(proposalHelperWidthRangeDivisor_), 
+                boost::program_options::value<double>(&proposalHelperWidthRangeDivisor_)->default_value(proposalHelperWidthRangeDivisor_),
                 "Sets the fractional size of the gaussians in the proposal")
         ("alwaysStepPOI", boost::program_options::value<bool>(&alwaysStepPoi_)->default_value(alwaysStepPoi_),
                             "When using 'ortho' proposal, always step also the parameter of interest. On by default, as it improves convergence, but you can turn it off (e.g. if you turn off --optimizeSimPdf)")
         ("propHelperUniformFraction", 
-                boost::program_options::value<float>(&proposalHelperUniformFraction_)->default_value(proposalHelperUniformFraction_), 
+                boost::program_options::value<double>(&proposalHelperUniformFraction_)->default_value(proposalHelperUniformFraction_),
                 "Add a fraction of uniform proposals to the algorithm")
         ("debugProposal", boost::program_options::value<int>(&debugProposal_)->default_value(debugProposal_), "Printout the first N proposals")
         ("cropNSigmas", 
-                boost::program_options::value<float>(&cropNSigmas_)->default_value(cropNSigmas_),
+                boost::program_options::value<double>(&cropNSigmas_)->default_value(cropNSigmas_),
                 "crop range of all parameters to N times their uncertainty") 
         ("truncatedMeanFraction", 
-                boost::program_options::value<float>(&truncatedMeanFraction_)->default_value(truncatedMeanFraction_), 
+                boost::program_options::value<double>(&truncatedMeanFraction_)->default_value(truncatedMeanFraction_),
                 "Discard this fraction of the results before computing the mean and rms")
         ("adaptiveTruncation", boost::program_options::value<bool>(&adaptiveTruncation_)->default_value(adaptiveTruncation_),
                             "When averaging multiple runs, ignore results that are more far away from the median than the inter-quartile range")
         ("hintSafetyFactor",
-                boost::program_options::value<float>(&hintSafetyFactor_)->default_value(hintSafetyFactor_),
+                boost::program_options::value<double>(&hintSafetyFactor_)->default_value(hintSafetyFactor_),
                 "set range of integration equal to this number of times the hinted limit")
         ("saveChain", "Save MarkovChain to output file")
         ("noSlimChain", "Include also nuisance parameters in the chain that is saved to file")
@@ -118,7 +118,7 @@ void MarkovChainMC::applyOptions(const boost::program_options::variables_map &vm
     noReset_  = vm.count("noReset");
     updateHint_  = vm.count("updateHint");
 
-    mass_ = vm["mass"].as<float>();
+    mass_ = vm["mass"].as<double>();
     saveChain_   = vm.count("saveChain");
     noSlimChain_   = vm.count("noSlimChain");
     mergeChains_ = vm.count("mergeChains");

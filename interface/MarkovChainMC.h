@@ -32,17 +32,17 @@ private:
   /// Discard these points
   static unsigned int burnInSteps_;
   /// Discard these fraction of points
-  static float burnInFraction_;
+  static double burnInFraction_;
   /// Adaptive burn-in (experimental!)
   static bool adaptiveBurnIn_;
   /// compute the limit N times
   static unsigned int tries_;
   /// Ignore up to this fraction of results if they're too far from the median
-  static float truncatedMeanFraction_;
+  static double truncatedMeanFraction_;
   /// do adaptive truncated mean
   static bool adaptiveTruncation_;
   /// Safety factor for hint (integrate up to this number of times the hinted limit)
-  static float hintSafetyFactor_;
+  static double hintSafetyFactor_;
   /// Save Markov Chain in output file
   static bool saveChain_;
   /// Leave all parameters in the markov chain, not just the POI 
@@ -52,15 +52,15 @@ private:
   /// Read chains from file instead of running them 
   static bool readChains_;
   /// Mass of the Higgs boson (goes into the name of the saved chains)
-  float mass_;
+  double mass_;
   /// Number of degrees of freedom of the problem, approximately
   int   modelNDF_;
 
   static unsigned int numberOfBins_;
   static unsigned int proposalHelperCacheSize_;
   static bool         alwaysStepPoi_;
-  static float        proposalHelperWidthRangeDivisor_, proposalHelperUniformFraction_;
-  static float        cropNSigmas_;
+  static double       proposalHelperWidthRangeDivisor_, proposalHelperUniformFraction_;
+  static double       cropNSigmas_;
   static int          debugProposal_;
   ///
   static std::vector<std::string> discreteModelPoints_;

@@ -36,9 +36,9 @@ MultiDimFit::Algo MultiDimFit::algo_ = None;
 MultiDimFit::GridType MultiDimFit::gridType_ = G1x1;
 std::vector<std::string>  MultiDimFit::poi_;
 std::vector<RooRealVar *> MultiDimFit::poiVars_;
-std::vector<float>        MultiDimFit::poiVals_;
+std::vector<double>       MultiDimFit::poiVals_;
 RooArgList                MultiDimFit::poiList_;
-float                     MultiDimFit::deltaNLL_ = 0;
+double                    MultiDimFit::deltaNLL_ = 0;
 unsigned int MultiDimFit::points_ = 50;
 unsigned int MultiDimFit::firstPoint_ = 0;
 unsigned int MultiDimFit::lastPoint_  = std::numeric_limits<unsigned int>::max();
@@ -54,10 +54,10 @@ bool MultiDimFit::hasMaxDeltaNLLForProf_ = false;
 bool MultiDimFit::squareDistPoiStep_ = false;
 bool MultiDimFit::skipInitialFit_ = false;
 bool MultiDimFit::saveFitResult_ = false;
-float MultiDimFit::maxDeltaNLLForProf_ = 200;
-float MultiDimFit::autoRange_ = -1.0;
+double MultiDimFit::maxDeltaNLLForProf_ = 200;
+double MultiDimFit::autoRange_ = -1.0;
 std::string MultiDimFit::fixedPointPOIs_ = "";
-float MultiDimFit::centeredRange_ = -1.0;
+double MultiDimFit::centeredRange_ = -1.0;
 bool        MultiDimFit::robustHesse_ = false;
 std::string MultiDimFit::robustHesseLoad_ = "";
 std::string MultiDimFit::robustHesseSave_ = "";
@@ -72,7 +72,7 @@ std::string MultiDimFit::saveSpecifiedNuis_;
 std::string MultiDimFit::setParametersForGrid_;
 std::vector<std::string>  MultiDimFit::specifiedFuncNames_;
 std::vector<RooAbsReal*> MultiDimFit::specifiedFunc_;
-std::vector<float>        MultiDimFit::specifiedFuncVals_;
+std::vector<double>       MultiDimFit::specifiedFuncVals_;
 RooArgList                MultiDimFit::specifiedFuncList_;
 std::vector<std::string>  MultiDimFit::specifiedCatNames_;
 std::vector<RooCategory*> MultiDimFit::specifiedCat_;
@@ -80,7 +80,7 @@ std::vector<int>        MultiDimFit::specifiedCatVals_;
 RooArgList                MultiDimFit::specifiedCatList_;
 std::vector<std::string>  MultiDimFit::specifiedNuis_;
 std::vector<RooRealVar *> MultiDimFit::specifiedVars_;
-std::vector<float>        MultiDimFit::specifiedVals_;
+std::vector<double>       MultiDimFit::specifiedVals_;
 RooArgList                MultiDimFit::specifiedList_;
 bool MultiDimFit::saveInactivePOI_= false;
 bool MultiDimFit::skipDefaultStart_ = false;
@@ -98,11 +98,11 @@ MultiDimFit::MultiDimFit() :
         ("gridPoints",  boost::program_options::value<std::string>(&gridPoints_)->default_value(gridPoints_), "Comma separated list of points per POI for multidimensional grid scans. When set, --points is ignored.")
         ("firstPoint",  boost::program_options::value<unsigned int>(&firstPoint_)->default_value(firstPoint_), "First point to use")
         ("lastPoint",  boost::program_options::value<unsigned int>(&lastPoint_)->default_value(lastPoint_), "Last point to use")
-        ("autoRange", boost::program_options::value<float>(&autoRange_)->default_value(autoRange_), "Set to any X >= 0 to do the scan in the +/- X sigma range (where the sigma is from the initial fit, so it may be fairly approximate)")
+        ("autoRange", boost::program_options::value<double>(&autoRange_)->default_value(autoRange_), "Set to any X >= 0 to do the scan in the +/- X sigma range (where the sigma is from the initial fit, so it may be fairly approximate)")
 	("fixedPointPOIs",   boost::program_options::value<std::string>(&fixedPointPOIs_)->default_value(""), "Parameter space point for --algo=fixed")
-        ("centeredRange", boost::program_options::value<float>(&centeredRange_)->default_value(centeredRange_), "Set to any X >= 0 to do the scan in the +/- X range centered on the nominal value")
+        ("centeredRange", boost::program_options::value<double>(&centeredRange_)->default_value(centeredRange_), "Set to any X >= 0 to do the scan in the +/- X range centered on the nominal value")
         ("fastScan", "Do a fast scan, evaluating the likelihood without profiling it.")
-        ("maxDeltaNLLForProf",  boost::program_options::value<float>(&maxDeltaNLLForProf_)->default_value(maxDeltaNLLForProf_), "Last point to use")
+        ("maxDeltaNLLForProf",  boost::program_options::value<double>(&maxDeltaNLLForProf_)->default_value(maxDeltaNLLForProf_), "Last point to use")
 	("saveSpecifiedNuis",   boost::program_options::value<std::string>(&saveSpecifiedNuis_)->default_value(""), "Save specified parameters (default = none)")
 	("saveSpecifiedFunc",   boost::program_options::value<std::string>(&saveSpecifiedFuncs_)->default_value(""), "Save specified function values (default = none)")
 	("saveSpecifiedIndex",   boost::program_options::value<std::string>(&saveSpecifiedIndex_)->default_value(""), "Save specified indexes/discretes (default = none)")
@@ -430,18 +430,18 @@ void MultiDimFit::initOnce(RooWorkspace *w, RooStats::ModelConfig *mc_s) {
 
     // then add the branches to the tree (at the end, so there are no resizes)
     for (int i = 0, n = poi_.size(); i < n; ++i) {
-        Combine::addBranch(poi_[i].c_str(), &poiVals_[i], (poi_[i]+"/F").c_str()); 
+        Combine::addBranch(poi_[i].c_str(), &poiVals_[i], (poi_[i]+"/D").c_str());
     }
     for (int i = 0, n = specifiedNuis_.size(); i < n; ++i) {
-	Combine::addBranch(specifiedNuis_[i].c_str(), &specifiedVals_[i], (specifiedNuis_[i]+"/F").c_str()); 
+        Combine::addBranch(specifiedNuis_[i].c_str(), &specifiedVals_[i], (specifiedNuis_[i]+"/D").c_str());
     }
     for (int i = 0, n = specifiedFuncNames_.size(); i < n; ++i) {
-	Combine::addBranch(specifiedFuncNames_[i].c_str(), &specifiedFuncVals_[i], (specifiedFuncNames_[i]+"/F").c_str()); 
+        Combine::addBranch(specifiedFuncNames_[i].c_str(), &specifiedFuncVals_[i], (specifiedFuncNames_[i]+"/D").c_str());
     }
     for (int i = 0, n = specifiedCatNames_.size(); i < n; ++i) {
 	Combine::addBranch(specifiedCatNames_[i].c_str(), &specifiedCatVals_[i], (specifiedCatNames_[i]+"/I").c_str()); 
     }
-    Combine::addBranch("deltaNLL", &deltaNLL_, "deltaNLL/F");
+    Combine::addBranch("deltaNLL", &deltaNLL_, "deltaNLL/D");
 }
 
 void MultiDimFit::doSingles(RooFitResult &res)
@@ -514,9 +514,9 @@ void MultiDimFit::doImpact(RooFitResult &res, RooAbsReal &nll) {
 
   // Save the best-fit values of the saved parameters
   // we want to measure the impacts on
-  std::vector<float> specifiedVals = specifiedVals_;
-  std::vector<float> impactLo = specifiedVals_;
-  std::vector<float> impactHi = specifiedVals_;
+  std::vector<double> specifiedVals = specifiedVals_;
+  std::vector<double> impactLo = specifiedVals_;
+  std::vector<double> impactHi = specifiedVals_;
 
   int len = 9;
   for (int i = 0, n = poi_.size(); i < n; ++i) {
@@ -1021,8 +1021,8 @@ void MultiDimFit::doFixedPoint(RooWorkspace *w, RooAbsReal &nll)
 void MultiDimFit::doContour2D(RooWorkspace *, RooAbsReal &nll) 
 {
     if (poi_.size() != 2) throw std::logic_error("Contour2D works only in 2 dimensions");
-    RooRealVar *xv = poiVars_[0]; double x0 = poiVals_[0]; float &x = poiVals_[0];
-    RooRealVar *yv = poiVars_[1]; double y0 = poiVals_[1]; float &y = poiVals_[1];
+    RooRealVar *xv = poiVars_[0]; double x0 = poiVals_[0]; double &x = poiVals_[0];
+    RooRealVar *yv = poiVars_[1]; double y0 = poiVals_[1]; double &y = poiVals_[1];
 
     double threshold = nll.getVal() + 0.5*ROOT::Math::chisquared_quantile_c(1-cl,2+nOtherFloatingPoi_);
     if (verbose>0) CombineLogger::instance().log("MultiDimFit.cc",__LINE__,std::string(Form("Best fit point is for %s, %s, = %.4f,%.4f",xv->GetName(),yv->GetName(),x0,y0)),__func__);
@@ -1205,8 +1205,8 @@ void MultiDimFit::splitGridPoints(const std::string& s, std::vector<unsigned int
 
 // Extract the ranges map from the input string
 // Assumes the string is formatted with colons like "poi_name1=lo_lim,hi_lim:poi_name2=lo_lim,hi_lim"
-std::map<std::string, std::vector<float>> MultiDimFit::getRangesDictFromInString(std::string params_ranges_string_in) {
-    std::map<std::string, std::vector<float>> out_range_dict;
+std::map<std::string, std::vector<double>> MultiDimFit::getRangesDictFromInString(std::string params_ranges_string_in) {
+    std::map<std::string, std::vector<double>> out_range_dict;
     std::vector<std::string> params_ranges_string_lst = Utils::split(params_ranges_string_in, ":");
     for (UInt_t p = 0; p < params_ranges_string_lst.size(); ++p) {
         std::vector<std::string> params_ranges_string = Utils::split(params_ranges_string_lst[p], "=,");
@@ -1214,8 +1214,8 @@ std::map<std::string, std::vector<float>> MultiDimFit::getRangesDictFromInString
             std::cout << "Error parsing expression : " << params_ranges_string_lst[p] << std::endl;
         }
         std::string wc_name =params_ranges_string[0];
-        float lim_lo = atof(params_ranges_string[1].c_str());
-        float lim_hi = atof(params_ranges_string[2].c_str());
+        double lim_lo = atof(params_ranges_string[1].c_str());
+        double lim_hi = atof(params_ranges_string[2].c_str());
         out_range_dict.insert({wc_name,{lim_lo,lim_hi}});
     }
     return out_range_dict;

@@ -35,10 +35,10 @@ protected:
 
   static std::vector<std::string>  poi_;
   static std::vector<RooRealVar*>  poiVars_;
-  static std::vector<float>        poiVals_;
-  static RooArgList                poiList_; 
+  static std::vector<double>       poiVals_;
+  static RooArgList                poiList_;
   static unsigned int              nOtherFloatingPoi_; // keep a count of other POIs that we're ignoring, for proper chisquare normalization
-  static float                     deltaNLL_;
+  static double                    deltaNLL_;
 
   static std::string name_;
   static std::string massName_;
@@ -55,13 +55,13 @@ protected:
   static bool fastScan_;
   static bool hasMaxDeltaNLLForProf_;
   static bool loadedSnapshot_,  savingSnapshot_;
-  static float maxDeltaNLLForProf_;
-  static float autoRange_;
+  static double maxDeltaNLLForProf_;
+  static double autoRange_;
   static bool  startFromPreFit_;
   static bool  alignEdges_;
   static bool  saveFitResult_;
   static std::string fixedPointPOIs_;
-  static float centeredRange_;
+  static double centeredRange_;
   static std::string setParametersForGrid_;
 
   static bool robustHesse_;
@@ -77,7 +77,7 @@ protected:
   static std::string saveSpecifiedIndex_;
   static std::vector<std::string>  specifiedFuncNames_;
   static std::vector<RooAbsReal*> specifiedFunc_;
-  static std::vector<float>        specifiedFuncVals_;
+  static std::vector<double>       specifiedFuncVals_;
   static RooArgList                specifiedFuncList_;
   static std::vector<std::string>  specifiedCatNames_;
   static std::vector<RooCategory*> specifiedCat_;
@@ -85,7 +85,7 @@ protected:
   static RooArgList                specifiedCatList_;
   static std::vector<std::string>  specifiedNuis_;
   static std::vector<RooRealVar *> specifiedVars_;
-  static std::vector<float>        specifiedVals_;
+  static std::vector<double>       specifiedVals_;
   static RooArgList                specifiedList_;
   static bool saveInactivePOI_;
   static bool skipDefaultStart_;
@@ -101,7 +101,7 @@ protected:
   void doStitch2D(RooWorkspace *w, RooAbsReal &nll) ;
   void doImpact(RooFitResult &res, RooAbsReal &nll) ;
 
-  std::map<std::string, std::vector<float>> getRangesDictFromInString(std::string) ;
+  std::map<std::string, std::vector<double>> getRangesDictFromInString(std::string) ;
 
 
   // utilities

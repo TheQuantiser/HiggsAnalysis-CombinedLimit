@@ -22,7 +22,7 @@ public:
 protected:
   std::string nameForLabel(const char *label) ;
 
-  static float mu_;
+  static double mu_;
   static bool  fixedMu_;
 
   static bool runMinos_;
