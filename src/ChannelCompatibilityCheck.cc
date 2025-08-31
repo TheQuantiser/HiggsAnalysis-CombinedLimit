@@ -20,7 +20,7 @@
 
 using namespace RooStats;
 
-float ChannelCompatibilityCheck::mu_ = 0.0;
+double ChannelCompatibilityCheck::mu_ = 0.0;
 bool  ChannelCompatibilityCheck::fixedMu_ = false;
 bool  ChannelCompatibilityCheck::saveFitResult_ = true;
 bool  ChannelCompatibilityCheck::runMinos_ = true;
@@ -31,7 +31,7 @@ ChannelCompatibilityCheck::ChannelCompatibilityCheck() :
     FitterAlgoBase("ChannelCompatibilityCheck specific options")
 {
     options_.add_options()
-        ("fixedSignalStrength", boost::program_options::value<float>(&mu_)->default_value(mu_),  "Compute the compatibility for a fixed signal strength. If not specified, it is left floating")
+        ("fixedSignalStrength", boost::program_options::value<double>(&mu_)->default_value(mu_),  "Compute the compatibility for a fixed signal strength. If not specified, it is left floating")
         ("saveFitResult",       "Save fit results in output file")
         ("group,g",             boost::program_options::value<std::vector<std::string> >(&groups_), "Group together channels that contain a given name. Can be used multiple times. Optionally, set range as name=rMin,rMax")
         ("runMinos", boost::program_options::value<bool>(&runMinos_)->default_value(runMinos_), "Also compute uncertainties using profile likeilhood (MINOS or robust variants of it)")

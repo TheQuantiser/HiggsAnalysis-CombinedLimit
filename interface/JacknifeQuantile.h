@@ -19,14 +19,14 @@ class QuantileCalculator {
         void randomizePoints() ;
         std::pair<double,double> quantileAndError(double quantile, Method method);
     private:
-        struct point { 
-            float x, w; 
-            int set; 
+        struct point {
+            double x, w;
+            int set;
             inline bool operator<(const point &other) const { return x < other.x; }
         };
         std::vector<point> points_;
         std::vector<double> sumw_;
-        std::vector<float> quantiles_;
+        std::vector<double> quantiles_;
         std::mt19937 rng_{std::random_device{}()};
 
         int guessPartitions(int size, double quantile) ;

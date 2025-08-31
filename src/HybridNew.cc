@@ -70,7 +70,7 @@ bool HybridNew::saveHybridResult_  = false;
 bool HybridNew::readHybridResults_ = false;
 bool  HybridNew::expectedFromGrid_ = false;
 bool  HybridNew::clsQuantiles_ = true;
-float HybridNew::quantileForExpectedFromGrid_ = 0.5;
+double HybridNew::quantileForExpectedFromGrid_ = 0.5;
 bool  HybridNew::fullBToys_ = false;
 bool  HybridNew::fullGrid_ = false;
 bool  HybridNew::saveGrid_ = false;
@@ -88,10 +88,10 @@ bool HybridNew::rMaxSet_                = false;
 std::string HybridNew::plot_;
 //std::string HybridNew::minimizerAlgo_ = "Minuit2";
 //float       HybridNew::minimizerTolerance_ = 1e-2;
-float       HybridNew::adaptiveToys_ = -1;
+double      HybridNew::adaptiveToys_ = -1;
 bool        HybridNew::reportPVal_ = false;
-float HybridNew::confidenceToleranceForToyScaling_ = 0.2;
-float HybridNew::maxProbability_ = 0.999;
+double HybridNew::confidenceToleranceForToyScaling_ = 0.2;
+double HybridNew::maxProbability_ = 0.999;
 double HybridNew::EPS = 1e-4;
 std::string HybridNew::mode_ = "";
 
@@ -116,7 +116,7 @@ LimitAlgo("HybridNew specific options") {
         ("saveHybridResult",  "Save result in the output file")
         ("readHybridResults", "Read and merge results from file (requires option '--grid' or '--toysFile')")
         ("grid",    boost::program_options::value<std::string>(&gridFile_), "Use the specified file containing a grid of SamplingDistributions for the limit (implies readHybridResults).\n For calculating CLs/pmu values with --singlePoint or if calculating the Signfiicance with LHCmode LHC-significance ( or any option with --signif) use '--toysFile=x.root --readHybridResult' !")
-        ("expectedFromGrid", boost::program_options::value<float>(&quantileForExpectedFromGrid_)->default_value(0.5), "Use the grid to compute the expected limit for this quantile")
+        ("expectedFromGrid", boost::program_options::value<double>(&quantileForExpectedFromGrid_)->default_value(0.5), "Use the grid to compute the expected limit for this quantile")
         ("signalForSignificance", boost::program_options::value<std::string>()->default_value("1"), "Use this value of the parameter of interest when generating signal toys for expected significance (same syntax as --singlePoint)")
         ("clsQuantiles", boost::program_options::value<bool>(&clsQuantiles_)->default_value(clsQuantiles_), "Compute correct quantiles of CLs or Pmu instead of assuming they're the same as those for Pb")
         //("importanceSamplingNull", boost::program_options::value<bool>(&importanceSamplingNull_)->default_value(importanceSamplingNull_),
@@ -137,10 +137,10 @@ LimitAlgo("HybridNew specific options") {
         ("noUpdateGrid", "Do not update test statistics at grid points")
         ("fullBToys", "Run as many B toys as S ones (default is to run 1/4 of b-only toys)")
         ("pvalue", "Report p-value instead of significance (when running with --significance)")
-        ("adaptiveToys",boost::program_options::value<float>(&adaptiveToys_)->default_value(adaptiveToys_), "Throw fewer toys far from interesting contours , --toysH scaled by scale when probability is far from any of CL_i = {importanceContours} ")
+        ("adaptiveToys",boost::program_options::value<double>(&adaptiveToys_)->default_value(adaptiveToys_), "Throw fewer toys far from interesting contours , --toysH scaled by scale when probability is far from any of CL_i = {importanceContours} ")
         ("importantContours",boost::program_options::value<std::string>(&scaleAndConfidenceSelection_)->default_value(scaleAndConfidenceSelection_), "Throw fewer toys far from interesting contours , format : CL_1,CL_2,..CL_N (--toysH scaled down when probability is far from any of CL_i) ")
-        ("maxProbability", boost::program_options::value<float>(&maxProbability_)->default_value(maxProbability_),  "when point is >  maxProbability countour, don't bother throwing toys")
-        ("confidenceTolerance", boost::program_options::value<float>(&confidenceToleranceForToyScaling_)->default_value(confidenceToleranceForToyScaling_),  "Determine what 'far' means for adatptiveToys. (relative in terms of (1-cl))")
+        ("maxProbability", boost::program_options::value<double>(&maxProbability_)->default_value(maxProbability_),  "when point is >  maxProbability countour, don't bother throwing toys")
+        ("confidenceTolerance", boost::program_options::value<double>(&confidenceToleranceForToyScaling_)->default_value(confidenceToleranceForToyScaling_),  "Determine what 'far' means for adatptiveToys. (relative in terms of (1-cl))")
         ("LHCmode", boost::program_options::value<std::string>(&mode_)->default_value(mode_),  "Shortcuts for LHC style running modes. --LHCmode LHC-significance: --generateNuisances=0 --generateExternalMeasurements=1 --fitNuisances=1 --testStat=LHC (Q_LHC, modified for discovery) --significance, --LHCmode LHC-limits: --generateNuisances=0 --generateExternalMeasurements=1 --fitNuisances=1 --testStat=LHC (Q_LHC, modified for upper limits) --rule CLs, --LHCmode LHC-feldman-cousins: --generateNuisances=0 --generateExternalMeasurements=1 --fitNuisances=1 --testStat=PL (Q_Profile, includes boundaries) --rule Pmu")
 
     ;
@@ -209,7 +209,7 @@ void HybridNew::applyOptions(const boost::program_options::variables_map &vm) {
     saveHybridResult_ = vm.count("saveHybridResult");
     readHybridResults_ = ( vm.count("readHybridResults") || vm.count("grid") );
     if (readHybridResults_ && !(vm.count("toysFile") || vm.count("grid")))     throw std::invalid_argument("HybridNew: must have 'toysFile' or 'grid' option to have 'readHybridResults'\n");
-    mass_ = vm["mass"].as<float>();
+    mass_ = vm["mass"].as<double>();
     fullGrid_ = vm.count("fullGrid");
     saveGrid_ = vm.count("saveGrid");
     fullBToys_ = vm.count("fullBToys");
@@ -369,7 +369,7 @@ bool HybridNew::runLimit(RooWorkspace *w, RooStats::ModelConfig *mc_s, RooStats:
       if (verbose > 0) std::cout << "Search for upper limit using pre-computed grid of p-values" << std::endl;
 
       // need to get hold of quantileExpectedBranch 
-      Float_t quantExpectedIn;
+      double quantExpectedIn;
 	
       if (!gridFile_.empty()) {
         if (grid_.empty()) {
@@ -392,7 +392,7 @@ bool HybridNew::runLimit(RooWorkspace *w, RooStats::ModelConfig *mc_s, RooStats:
 
 		// check if we will have to update since we need a new value for the "data" test stat
 		if (expectedFromGrid_) {
-		   Float_t diffQE = TMath::Abs(quantExpectedIn-quantileForExpectedFromGrid_);
+               double diffQE = TMath::Abs(quantExpectedIn-quantileForExpectedFromGrid_);
 		   if (diffQE > EPS)  {
 		     updateGridData(w, mc_s, mc_b, data, !fullGrid_, clsTarget);
 		   }
@@ -1038,16 +1038,16 @@ std::unique_ptr<RooStats::HybridCalculator> HybridNew::create(RooWorkspace *w, R
       	double qN = 2*(setup.toymcsampler->EvaluateTestStatistic(data,poi));
       	double prob = ROOT::Math::chisquared_cdf_c(qN,poi.getSize());
 
-	std::vector<float>scaleAndConfidences;
+        std::vector<double>scaleAndConfidences;
   	std::vector<std::string> scaleAndConfidencesList = Utils::split(scaleAndConfidenceSelection_ , ",");
 
   	for (UInt_t p = 0; p < scaleAndConfidencesList.size(); ++p) {
 
-		scaleAndConfidences.push_back(atof(scaleAndConfidencesList[p].c_str()));
+                scaleAndConfidences.push_back(atof(scaleAndConfidencesList[p].c_str()));
 	}
 
-    	int nCL_ = scaleAndConfidences.size();
-        float scaleNumberOfToys = adaptiveToys_;
+        int nCL_ = scaleAndConfidences.size();
+        double scaleNumberOfToys = adaptiveToys_;
 	int nToyssc = nToys_;
 
 	if ((1.-prob) > maxProbability_) nToyssc=1.;

@@ -51,7 +51,7 @@ private:
   static bool saveHybridResult_, readHybridResults_; 
   static std::string gridFile_;
   static bool expectedFromGrid_, clsQuantiles_; 
-  static float quantileForExpectedFromGrid_;
+    static double quantileForExpectedFromGrid_;
   static bool fullBToys_; 
   static bool fullGrid_; 
   static bool saveGrid_; 
@@ -69,11 +69,11 @@ private:
   static bool newToyMCSampler_;
   static bool rMinSet_;
   static bool rMaxSet_;
-  float mass_;
+  double mass_;
   static std::string	scaleAndConfidenceSelection_; 
-  static float maxProbability_;
-  static float confidenceToleranceForToyScaling_;
-  static float adaptiveToys_;
+  static double maxProbability_;
+  static double confidenceToleranceForToyScaling_;
+  static double adaptiveToys_;
 
   static double EPS;
   // graph, used to compute the limit, not just for plotting!
