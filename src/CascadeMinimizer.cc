@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <cstdlib>
 #include <set>
+#include <stdexcept>
 
 boost::program_options::options_description CascadeMinimizer::options_("Cascade Minimizer options");
 std::vector<CascadeMinimizer::Algo> CascadeMinimizer::fallbacks_;
@@ -866,7 +867,11 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
         defaultMinimizerAlgo_ = algo;
     }
     if (defaultMinimizerType_ == "Ceres") {
-        gSystem->Load("libCeresMinimizer");
+        int loadStatus = gSystem->Load("libCeresMinimizer");
+        if (loadStatus < 0) {
+            CombineLogger::instance().log("CascadeMinimizer.cc",__LINE__,"[FATAL] Failed to load libCeresMinimizer. Rebuild with Ceres support or choose a supported minimizer.",__func__);
+            throw std::runtime_error("Failed to load libCeresMinimizer");
+        }
         setenv("CERES_ALGO", defaultMinimizerAlgo_.c_str(), 1);
     }
     // Note that the options are not applied again when recreating a CascadeMinimizer so need to set the global attributes (should we make the modifiable options persistant too?)
