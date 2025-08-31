@@ -6,7 +6,7 @@
 #include <Math/IGradientFunctionMultiDim.h>
 using RootIMultiGradFunction = ROOT::Math::IGradientFunctionMultiDim;
 #else
-#include <Math/IMultiGradFunction.h>
+#include "Math/IFunction.h"
 using RootIMultiGradFunction = ROOT::Math::IMultiGradFunction;
 #endif
 #include <ceres/ceres.h>

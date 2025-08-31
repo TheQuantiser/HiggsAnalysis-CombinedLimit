@@ -1,6 +1,5 @@
 #include "../interface/CeresMinimizer.h"
 #include "../interface/CombineLogger.h"
-#include <Math/IMultiGenFunction.h>
 #include <Math/MinimizerOptions.h>
 #include <TPluginManager.h>
 #include <TMatrixDSym.h>

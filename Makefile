@@ -142,16 +142,16 @@ $(LIB_DIR):
 	@mkdir -p $(LIB_DIR)
 
 ${LIB_DIR}/$(SONAME): $(addprefix $(OBJ_DIR)/,$(OBJS)) $(OBJ_DIR)/a/$(DICTNAME).o | $(LIB_DIR)
-        $(LD) $(LDFLAGS) $(BOOST_INC) $^ $(SOFLAGS) -o $@ $(LIBS)
+	$(LD) $(LDFLAGS) $(BOOST_INC) $^ $(SOFLAGS) -o $@ $(LIBS)
 
 #---------------------------------------
 
 ifdef CERES
 $(CERES_OBJ): ceres/CeresMinimizer.cc $(INC_DIR)/CeresMinimizer.h | $(OBJ_DIR)
-        $(CXX) $(CCFLAGS) -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) $(CERES_INC) -c $< -o $@
+	$(CXX) $(CCFLAGS) -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) $(CERES_INC) -c $< -o $@
 
 $(CERES_SO): $(CERES_OBJ) | $(LIB_DIR)
-        $(CXX) -shared -fPIC -o $@ $^ $(CERES_LIB) $(ROOTLIBS)
+	$(CXX) -shared -fPIC -o $@ $^ $(CERES_LIB) $(ROOTLIBS)
 endif
 
 #---------------------------------------
