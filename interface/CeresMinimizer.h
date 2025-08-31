@@ -11,6 +11,7 @@ using RootIMultiGradFunction = ROOT::Math::IMultiGradFunction;
 #endif
 #include <ceres/ceres.h>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <memory>
 #include <RVersion.h>
@@ -22,9 +23,9 @@ public:
   ~CeresMinimizer() override;
 
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6, 30, 0)
-  std::string Name() const override { return "Ceres"; }
-  bool ProvidesGradient() const override { return true; }
-  bool ProvidesHessian() const override { return true; }
+  std::string_view Name() const override { return "Ceres"; }
+  bool ProvidesGradient() const { return true; }
+  bool ProvidesHessian() const { return true; }
 #elif ROOT_VERSION_CODE >= ROOT_VERSION(6, 24, 0)
   const char *Name() const override { return "Ceres"; }
   bool ProvidesGradient() const override { return true; }
