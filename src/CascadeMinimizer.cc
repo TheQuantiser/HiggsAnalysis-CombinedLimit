@@ -33,7 +33,7 @@ bool CascadeMinimizer::firstHesse_ = false;
 bool CascadeMinimizer::lastHesse_ = false;
 int CascadeMinimizer::minuit2StorageLevel_ = 0;
 bool CascadeMinimizer::runShortCombinations = true;
-float CascadeMinimizer::nuisancePruningThreshold_ = 0;
+double CascadeMinimizer::nuisancePruningThreshold_ = 0;
 double CascadeMinimizer::discreteMinTol_ = 0.001;
 std::string CascadeMinimizer::defaultMinimizerType_ = "Minuit2";  // default to minuit2 (not always the default !?)
 std::string CascadeMinimizer::defaultMinimizerAlgo_ = "Migrad";
@@ -108,7 +108,7 @@ bool CascadeMinimizer::improve(int verbose, bool cascade, bool forceResetMinimiz
   minimizer_->setStrategy(strategy_);
   std::string nominalType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
   std::string nominalAlgo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
-  float nominalTol(ROOT::Math::MinimizerOptions::DefaultTolerance());
+  double nominalTol(ROOT::Math::MinimizerOptions::DefaultTolerance());
   minimizer_->setEps(nominalTol);
   if (approxPreFitTolerance_ > 0) {
     double tol = std::max(approxPreFitTolerance_, 10. * nominalTol);
@@ -343,7 +343,7 @@ bool CascadeMinimizer::hesse(int verbose) {
   if (simnllbb && !runtimedef::get(std::string("MINIMIZER_no_analytic"))) {
     // Have to reset and minimize again first to get all parameters in
     remakeMinimizer();
-    float nominalTol(ROOT::Math::MinimizerOptions::DefaultTolerance());
+    double nominalTol(ROOT::Math::MinimizerOptions::DefaultTolerance());
     minimizer_->setEps(nominalTol);
     minimizer_->setStrategy(strategy_);
     improveOnce(verbose - 1);
@@ -921,7 +921,7 @@ void CascadeMinimizer::initOptions() {
       "Symmetric relaxation applied to parameter bounds")("cminCeresAutoThreads",
                                                           boost::program_options::bool_switch()->default_value(false),
                                                           "Set Ceres threads to hardware concurrency when unspecified")
-      //("cminNuisancePruning", boost::program_options::value<float>(&nuisancePruningThreshold_)->default_value(nuisancePruningThreshold_), "if non-zero, discard constrained nuisances whose effect on the NLL when changing by 0.2*range is less than the absolute value of the threshold; if threshold is negative, repeat afterwards the fit with these floating")
+      //("cminNuisancePruning", boost::program_options::value<double>(&nuisancePruningThreshold_)->default_value(nuisancePruningThreshold_), "if non-zero, discard constrained nuisances whose effect on the NLL when changing by 0.2*range is less than the absolute value of the threshold; if threshold is negative, repeat afterwards the fit with these floating")
 
       //("cminDefaultIntegratorEpsAbs", boost::program_options::value<double>(), "RooAbsReal::defaultIntegratorConfig()->setEpsAbs(x)")
       //("cminDefaultIntegratorEpsRel", boost::program_options::value<double>(), "RooAbsReal::defaultIntegratorConfig()->setEpsRel(x)")
@@ -993,7 +993,7 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
     for (vector<string>::const_iterator it = falls.begin(), ed = falls.end(); it != ed; ++it) {
       std::string algo = *it;
       std::string type;
-      float tolerance = Algo::default_tolerance();
+      double tolerance = Algo::default_tolerance();
       int strategy = Algo::default_strategy();
       string::size_type idx = std::min(algo.find(';'), algo.find(':'));
       if (idx != string::npos && idx < algo.length()) {
