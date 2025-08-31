@@ -1072,15 +1072,6 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
   }
   ROOT::Math::MinimizerOptions::SetDefaultStrategy(strategy_);
 
-  CombineLogger::instance().log("CascadeMinimizer.cc",
-                                __LINE__,
-                                std::string(Form("Using minimizer %s with algorithm %s, strategy %d and tolerance %g",
-                                                 defaultMinimizerType_.c_str(),
-                                                 defaultMinimizerAlgo_.c_str(),
-                                                 strategy_,
-                                                 defaultMinimizerTolerance_)),
-                                __func__);
-
   // propagate Ceres specific options through environment variables
   if (vm.count("cminCeresMaxIterations")) {
     int val = vm["cminCeresMaxIterations"].as<int>();
@@ -1255,6 +1246,40 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
   }
   if (vm["cminCeresAutoThreads"].as<bool>()) {
     setenv("CERES_AUTO_THREADS", "1", 1);
+  }
+
+  // after applying all options, print a summary of the minimizer configuration
+  if (defaultMinimizerType_ == "Ceres") {
+    std::string fTol = getenv("CERES_FUNCTION_TOLERANCE")
+                           ? getenv("CERES_FUNCTION_TOLERANCE")
+                           : Form("%g", defaultMinimizerTolerance_);
+    std::string gTol = getenv("CERES_GRADIENT_TOLERANCE")
+                           ? getenv("CERES_GRADIENT_TOLERANCE")
+                           : fTol;
+    std::string pTol = getenv("CERES_PARAMETER_TOLERANCE")
+                           ? getenv("CERES_PARAMETER_TOLERANCE")
+                           : fTol;
+    CombineLogger::instance().log(
+        "CascadeMinimizer.cc",
+        __LINE__,
+        std::string(Form("Using minimizer %s with algorithm %s, strategy %d and tolerances f=%s g=%s p=%s",
+                         defaultMinimizerType_.c_str(),
+                         defaultMinimizerAlgo_.c_str(),
+                         strategy_,
+                         fTol.c_str(),
+                         gTol.c_str(),
+                         pTol.c_str())),
+        __func__);
+  } else {
+    CombineLogger::instance().log(
+        "CascadeMinimizer.cc",
+        __LINE__,
+        std::string(Form("Using minimizer %s with algorithm %s, strategy %d and tolerance %g",
+                         defaultMinimizerType_.c_str(),
+                         defaultMinimizerAlgo_.c_str(),
+                         strategy_,
+                         defaultMinimizerTolerance_)),
+        __func__);
   }
 
   //if (vm.count("cminDefaultIntegratorEpsAbs")) RooAbsReal::defaultIntegratorConfig()->setEpsAbs(vm["cminDefaultIntegratorEpsAbs"].as<double>());
