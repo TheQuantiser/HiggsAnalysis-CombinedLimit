@@ -310,7 +310,7 @@ bool CascadeMinimizer::minos(const RooArgSet &params, int verbose) {
   {
     std::string minAlgo =
         (myType == std::string("Ceres")) ? defaultMinimizerType_ + "," + defaultMinimizerAlgo_ : myType + "," + myAlgo;
-    Significance::MinimizerSentry minimizerConfig(minAlgo, minimizer_->tolerance());
+    Significance::MinimizerSentry minimizerConfig(minAlgo, ROOT::Math::MinimizerOptions::DefaultTolerance());
     iret = minimizer_->minos(params);
   }
   if (iret == 0) {
