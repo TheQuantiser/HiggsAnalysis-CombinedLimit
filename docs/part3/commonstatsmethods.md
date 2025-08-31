@@ -942,7 +942,8 @@ Below is a comparison in a likelihood scan, with 20 points, as a function of **`
 
 ![](images/r_qqH.png)
 
-You may find it useful to use the `--robustFit=1` option to turn on robust (brute-force) for likelihood scans (and other algorithms). You can set the strategy and tolerance when using the `--robustFit` option using the options `--setRobustFitAlgo` (default is `Minuit2,migrad`), `setRobustFitStrategy` (default is 0) and `--setRobustFitTolerance` (default is 0.1). If these options are not set, the defaults (set using `cminDefaultMinimizerX` options) will be used.
+You may find it useful to use the `--robustFit=1` option to turn on robust (brute-force) for likelihood scans (and other algorithms). You can set the strategy and tolerance when using the `--robustFit` option using the options `--setRobustFitAlgo` (default is `Minuit2,migrad`), `setRobustFitStrategy` (default is 0) and `--setRobustFitTolerance` (default is 0.1). If these options are not set, the defaults (set using `cminDefaultMinimizerX` options) will be used. The `--setRobustFitAlgo` parameter accepts the same type/algorithm pairs as `cminDefaultMinimizerType`/`Algo`, so `Ceres,TrustRegion` is also valid. When using Ceres you may also specify the algorithm via `--cminCeresAlgo`.
+Additional Ceres-specific controls like `--cminCeresProgress`, `--cminCeresMaxTime`, `--cminCeresJitterDist`, `--cminCeresBoundRelax` and `--cminCeresAutoThreads` can help stabilise difficult fits.
 
 If running `--robustFit=1` with the algo **singles**, you can tune the accuracy of the routine used to find the crossing points of the likelihood using the option `--setCrossingTolerance` (the default is set to 0.0001)
 
