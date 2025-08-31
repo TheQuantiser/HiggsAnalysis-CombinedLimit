@@ -125,7 +125,7 @@ Additional flags allow direct control over the Ceres solver:
 * `--cminCeresFunctionTolerance arg`: function tolerance passed to Ceres.
 * `--cminCeresGradientTolerance arg`: gradient tolerance passed to Ceres.
 * `--cminCeresParameterTolerance arg`: parameter tolerance passed to Ceres.
-* `--cminCeresNumericDiffStep arg`: step size used for numeric differentiation when gradients are unavailable.
+* `--cminCeresNumericDiffStep arg`: multiplier applied to each variable's step size for numeric differentiation when gradients are unavailable.
 * `--cminCeresDiffMethod arg`: choose `forward` or `central` numeric differentiation.
 * `--cminCeresLossFunction arg`: optional loss function (`none`, `huber`, `cauchy`).
 * `--cminCeresLossScale arg`: scale parameter for the Huber or Cauchy loss (default 1).
