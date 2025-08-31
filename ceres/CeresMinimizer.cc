@@ -3,6 +3,7 @@
 #include <Math/IMultiGenFunction.h>
 #include <Math/MinimizerOptions.h>
 #include <TPluginManager.h>
+#include <TMatrixDSym.h>
 #include <ceres/numeric_diff_cost_function.h>
 #include <ceres/loss_function.h>
 #include <TString.h>
@@ -25,7 +26,7 @@ void CeresMinimizer::Clear() {
     nDim_ = nFree_ = 0;
     nCalls_ = 0;
     x_.clear(); step_.clear(); lower_.clear(); upper_.clear(); isFixed_.clear();
-    grad_.clear(); hess_.clear();
+    grad_.clear(); hess_.clear(); cov_.clear(); errors_.clear();
     fMinVal_ = 0.0; edm_ = 0.0;
     numDiffStep_ = 1e-4;
     forceNumeric_ = false;
@@ -229,6 +230,26 @@ bool CeresMinimizer::Minimize() {
     } else {
         ComputeGradientAndHessian(x_.data());
     }
+
+    cov_.assign(nDim_*nDim_, 0.0);
+    errors_.assign(nDim_, 0.0);
+    if (!hess_.empty()) {
+        TMatrixDSym hmat(nDim_);
+        for (unsigned int i = 0; i < nDim_; ++i)
+            for (unsigned int j = 0; j < nDim_; ++j)
+                hmat(i,j) = hess_[i*nDim_ + j];
+        hmat.Invert();
+        for (unsigned int i = 0; i < nDim_; ++i) {
+            for (unsigned int j = 0; j < nDim_; ++j) {
+                cov_[i*nDim_ + j] = hmat(i,j);
+            }
+            errors_[i] = hmat(i,i) > 0 ? std::sqrt(hmat(i,i)) : 0.0;
+        }
+    }
+    edm_ = 0.0;
+    for (unsigned int i = 0; i < nDim_; ++i)
+        for (unsigned int j = 0; j < nDim_; ++j)
+            edm_ += 0.5 * grad_[i] * cov_[i*nDim_ + j] * grad_[j];
 
     CombineLogger::instance().log("CeresMinimizer.cc", __LINE__, bestSummary.BriefReport(), __func__);
     if (verbose) CombineLogger::instance().log("CeresMinimizer.cc", __LINE__, bestSummary.FullReport(), __func__);

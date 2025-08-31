@@ -34,9 +34,12 @@ public:
     unsigned int NDim() const override { return nDim_; }
     unsigned int NFree() const override { return nFree_; }
 
-    bool ProvidesError() const override { return false; }
-    const double * Errors() const override { return nullptr; }
-    double CovMatrix(unsigned int, unsigned int) const override { return 0.0; }
+    bool ProvidesError() const override { return true; }
+    const double * Errors() const override { return errors_.empty() ? nullptr : errors_.data(); }
+    double CovMatrix(unsigned int i, unsigned int j) const override {
+        if (cov_.empty() || i >= nDim_ || j >= nDim_) return 0.0;
+        return cov_[i*nDim_ + j];
+    }
 
     bool ProvidesGradient() const override { return true; }
     bool ProvidesHessian() const override { return true; }
@@ -67,6 +70,8 @@ private:
 
     std::vector<double> grad_;
     std::vector<double> hess_;
+    std::vector<double> cov_;
+    std::vector<double> errors_;
 
     double fMinVal_;
     double edm_;
