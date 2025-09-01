@@ -116,7 +116,6 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
   if (!std::isfinite(fval))
     return false;
   offset_ = std::max(offset_, -fval + 1.0);
-
   const double shiftedF = fval + offset_;
   if (!(shiftedF > 0) || !std::isfinite(shiftedF))
     return false;
@@ -365,13 +364,19 @@ bool CeresMinimizer::Minimize() {
     if (verbose)
       CombineLogger::instance().log(
           "CeresMinimizer.cc", __LINE__,
-          Form("multi-start %u fval %.6f raw %.6f offset %.6f", it, fval,
+          Form("multi-start %u usable=%d term=%d fval %.6f raw %.6f offset %.6f",
+               it, summary.IsSolutionUsable(), summary.termination_type, fval,
+
                summary.final_cost, offset),
           __func__);
     if (!summary.IsSolutionUsable() && verbose)
       CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
                                    "solution unusable", __func__);
-    if (summary.IsSolutionUsable() && fval < bestFval) {
+
+    if (fval < bestFval) {
+      if (!summary.IsSolutionUsable() && verbose)
+        CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
+                                     "storing unusable solution", __func__);
       bestFval = fval;
       xbest = x_;
       bestSummary = summary;
@@ -395,6 +400,11 @@ bool CeresMinimizer::Minimize() {
     CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
                                    Form("best offset %.6f", bestOffset),
                                    __func__);
+
+  if (!bestSummary.IsSolutionUsable())
+    CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
+                                 "best solution flagged unusable", __func__);
+
   fMinVal_ = bestFval;
   grad_.assign(nDim_, 0.0);
   hess_.assign(nDim_ * nDim_, 0.0);
@@ -493,6 +503,11 @@ bool CeresMinimizer::Minimize() {
   } else {
     status_ = -1;
   }
+  if (verbose)
+    CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
+                                   Form("final status %d term=%d usable=%d", status_,
+                                        bestSummary.termination_type, bestSummary.IsSolutionUsable()),
+                                   __func__);
 
   if (multiStart > 1 && jitter == 0.0)
     CombineLogger::instance().log(
