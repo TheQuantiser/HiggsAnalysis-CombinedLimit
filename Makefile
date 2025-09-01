@@ -21,7 +21,10 @@
 # These are ignored if either CONDA=1 or LCG=1 is set
 BOOST = /cvmfs/cms.cern.ch/el9_amd64_gcc12/external/boost/1.80.0-87b5de10acd2f2c8a325345ad058b814
 VDT   = /cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/vdt/0.4.3-793cee1e1edef0e54b2bd5cb1f69aec9
-GSL = /cvmfs/cms.cern.ch/el9_amd64_gcc12/external/gsl/2.6-5e2ce72ea2977ff21a2344bbb52daf5c
+GSL   = /cvmfs/cms.cern.ch/el9_amd64_gcc12/external/gsl/2.6-5e2ce72ea2977ff21a2344bbb52daf5c
+# Keep the Eigen installation path in one piece; splitting it across lines left
+# the include directory undefined, yielding "Eigen/Dense: No such file or
+# directory" during compilation when the default standalone paths are used.
 EIGEN = /cvmfs/cms.cern.ch/el9_amd64_gcc12/external/eigen/3bb6a48d8c171cf20b5f8e48bfb4e424fbd4f79e-3ca740c03e68b1a067f3ed0679234a78
 # Compiler and flags -----------------------------------------------------------
 CXX = $(shell root-config --cxx)
@@ -41,9 +44,17 @@ else ifeq ($(LCG), 1)
 CCFLAGS += -I ${CPLUS_INCLUDE_PATH}/eigen3
 LIBS += -L${CPLUS_INCLUDE_PATH}/../lib
 else
-CCFLAGS += -I$(BOOST)/include -I$(VDT)/include -I$(GSL)/include -I$(EIGEN)/include/eigen3
-LIBS += -L$(BOOST)/lib -L$(VDT)/lib -L$(GSL)/lib 
-endif 
+# Guard each external path so unset variables do not expand to bogus "-I/include"
+# entries, which would otherwise mask real include directories and lead to
+# compilation failures.
+CCFLAGS += $(if $(BOOST),-I$(BOOST)/include) \
+           $(if $(VDT),-I$(VDT)/include) \
+           $(if $(GSL),-I$(GSL)/include) \
+           $(if $(EIGEN),-I$(EIGEN)/include/eigen3)
+LIBS    += $(if $(BOOST),-L$(BOOST)/lib) \
+           $(if $(VDT),-L$(VDT)/lib) \
+           $(if $(GSL),-L$(GSL)/lib)
+endif
 
 # Library name -----------------------------------------------------------------
 LIBNAME=HiggsAnalysisCombinedLimit
