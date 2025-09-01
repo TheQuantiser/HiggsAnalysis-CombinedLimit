@@ -74,8 +74,18 @@ if(Ceres_FOUND)
   add_library(CeresMinimizer SHARED ceres/CeresMinimizer.cc G__CeresMinimizer.cxx)
   target_link_libraries(CeresMinimizer PUBLIC ${ROOT_LIBRARIES} Ceres::ceres)
   target_include_directories(CeresMinimizer PUBLIC ${Ceres_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/interface)
+  # Ensure the ROOT dictionary and rootmap are placed next to the plugin library
+  add_custom_command(TARGET CeresMinimizer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_BINARY_DIR}/libCeresMinimizer_rdict.pcm
+            $<TARGET_FILE_DIR:CeresMinimizer>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_BINARY_DIR}/libCeresMinimizer.rootmap
+            $<TARGET_FILE_DIR:CeresMinimizer>)
   install(TARGETS CeresMinimizer LIBRARY DESTINATION lib)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libCeresMinimizer_rdict.pcm DESTINATION lib)
+  install(FILES $<TARGET_FILE_DIR:CeresMinimizer>/libCeresMinimizer_rdict.pcm
+                $<TARGET_FILE_DIR:CeresMinimizer>/libCeresMinimizer.rootmap
+          DESTINATION lib)
 else()
   message(STATUS "Ceres not found - CeresMinimizer plugin will be unavailable")
 endif()
