@@ -648,8 +648,9 @@ float AsymptoticLimits::findExpectedLimitFromCrossing(
       minim.setStrategy(2);
 
       if (tries == 1) {
-        std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-        std::string algo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+          std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+          std::string algo =
+              (type == std::string("Ceres")) ? CascadeMinimizer::algo() : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
         if (minim.algo().find("Minuit2") != std::string::npos) {
           minim.minimizer().minimize("Minuit", "minimize");
         } else if (minim.algo().find("Minuit") != std::string::npos) {
