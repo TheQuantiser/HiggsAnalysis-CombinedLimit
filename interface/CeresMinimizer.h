@@ -9,7 +9,11 @@ using RootIMultiGradFunction = ROOT::Math::IGradientFunctionMultiDim;
 #include "Math/IFunction.h"
 using RootIMultiGradFunction = ROOT::Math::IMultiGradFunction;
 #endif
+#if __has_include(<ceres/ceres.h>)
 #include <ceres/ceres.h>
+#else
+#error "Ceres headers not found. Set CERES_PREFIX to the Ceres installation or install Ceres."
+#endif
 #include <string>
 #include <string_view>
 #include <vector>
@@ -73,6 +77,12 @@ public:
   unsigned int NDim() const override { return nDim_; }
   unsigned int NFree() const override { return nFree_; }
 
+  // ROOT's Minimizer did not historically expose a virtual Status()
+  // method, so we avoid using the 'override' keyword here to keep
+  // compatibility across ROOT versions while still allowing callers to
+  // query the minimizer termination code when available.
+  int Status() const { return status_; }
+
   bool ProvidesError() const override { return true; }
   const double *Errors() const override { return errors_.empty() ? nullptr : errors_.data(); }
   double CovMatrix(unsigned int i, unsigned int j) const override {
@@ -115,6 +125,8 @@ private:
 
   double numDiffStep_;
   bool forceNumeric_;
+
+  int status_;
 };
 
 #endif
