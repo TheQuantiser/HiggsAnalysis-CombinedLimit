@@ -22,7 +22,7 @@ public:
     ~CeresMinimizer() override;
 
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6,30,0)
-    std::string GetName() const override { return "Ceres"; }
+    // std::string GetName() const override { return "Ceres"; }
 #elif ROOT_VERSION_CODE >= ROOT_VERSION(6,24,0)
     const char * Name() const override { return "Ceres"; }
     bool ProvidesGradient() const override { return true; }
