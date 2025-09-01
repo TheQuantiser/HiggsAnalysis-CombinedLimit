@@ -111,10 +111,15 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
   // combine often offsets the objective so that fval can be zero or even
   // negative at the starting point. Shift the objective dynamically to keep
   // the argument of the square root positive while leaving the gradient of the
-  // original function unchanged. The offset grows monotonically, but the
-  // residual is evaluated with the previous offset so the true NLL differences
-  // are preserved.
+  // original function unchanged. The offset grows monotonically so that the
+  // true NLL differences are preserved.
+  if (!std::isfinite(fval))
+    return false;
+  offset_ = std::max(offset_, -fval + 1.0);
+
   const double shiftedF = fval + offset_;
+  if (!(shiftedF > 0) || !std::isfinite(shiftedF))
+    return false;
   const double sqrtF = std::sqrt(2.0 * shiftedF);
   residuals[0] = sqrtF;
   if (std::getenv("CERES_DEBUG_EVAL")) {
@@ -124,7 +129,7 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
              shiftedF),
         __func__);
   }
-  offset_ = std::max(offset_, -fval + 1.0);
+
   if (jacobians && jacobians[0]) {
     std::vector<double> grad(func->NDim());
     func->Gradient(x, grad.data());
@@ -144,7 +149,14 @@ struct NumericCostFunction : public ceres::CostFunction {
   bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const override {
     const double *x = parameters[0];
     const double fval = (*func)(x);
+
+    if (!std::isfinite(fval))
+      return false;
+    offset_ = std::max(offset_, -fval + 1.0);
+
     const double shiftedF = fval + offset_;
+    if (!(shiftedF > 0) || !std::isfinite(shiftedF))
+      return false;
     const double sqrtF = std::sqrt(2.0 * shiftedF);
     residuals[0] = sqrtF;
     if (std::getenv("CERES_DEBUG_EVAL")) {
@@ -154,7 +166,7 @@ struct NumericCostFunction : public ceres::CostFunction {
                shiftedF),
           __func__);
     }
-    offset_ = std::max(offset_, -fval + 1.0);
+
     if (jacobians && jacobians[0]) {
       std::vector<double> xtmp(func->NDim());
       std::copy(x, x + func->NDim(), xtmp.begin());
