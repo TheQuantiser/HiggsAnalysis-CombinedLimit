@@ -91,6 +91,7 @@ bool CeresMinimizer::SetFixedVariable(unsigned int i, const std::string &, doubl
   if (i >= nDim_)
     return false;
   x_[i] = val;
+  lower_[i] = upper_[i] = val;
   isFixed_[i] = true;
   nFree_--;
   return true;
@@ -110,9 +111,13 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
   // starting point.  If we used r = sqrt(fval) the Jacobian would vanish at
   // fval=0 and Ceres would immediately declare convergence.  Introduce a small
   // epsilon and use r = sqrt(2*(f+eps)) so that J^T r reproduces the gradient
-  // of the original function while keeping the problem well defined.
+  // of the original function while keeping the problem well defined.  Do not
+  // clamp fval to zero so that negative contributions to the NLL are still
+  // respected.
   constexpr double eps = 1e-12;
-  const double safeF = std::max(fval, 0.0) + eps;
+  double safeF = fval + eps;
+  if (safeF <= 0)
+    safeF = eps;
   const double sqrtF = std::sqrt(2.0 * safeF);
   residuals[0] = sqrtF;
   if (jacobians && jacobians[0]) {
@@ -135,7 +140,9 @@ struct NumericCostFunction : public ceres::CostFunction {
     const double *x = parameters[0];
     const double fval = (*func)(x);
     constexpr double eps = 1e-12;
-    const double safeF = std::max(fval, 0.0) + eps;
+    double safeF = fval + eps;
+    if (safeF <= 0)
+      safeF = eps;
     const double sqrtF = std::sqrt(2.0 * safeF);
     residuals[0] = sqrtF;
     if (jacobians && jacobians[0]) {
