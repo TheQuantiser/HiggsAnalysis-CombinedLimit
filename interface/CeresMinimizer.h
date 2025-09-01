@@ -73,7 +73,11 @@ public:
   unsigned int NDim() const override { return nDim_; }
   unsigned int NFree() const override { return nFree_; }
 
-  int Status() const override { return status_; }
+  // ROOT's Minimizer did not historically expose a virtual Status()
+  // method, so we avoid using the 'override' keyword here to keep
+  // compatibility across ROOT versions while still allowing callers to
+  // query the minimizer termination code when available.
+  int Status() const { return status_; }
 
   bool ProvidesError() const override { return true; }
   const double *Errors() const override { return errors_.empty() ? nullptr : errors_.data(); }
