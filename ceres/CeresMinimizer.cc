@@ -26,7 +26,8 @@ CeresMinimizer::CeresMinimizer(const char *)
       fMinVal_(0.0),
       edm_(0.0),
       numDiffStep_(1e-4),
-      forceNumeric_(false) {}
+      forceNumeric_(false),
+      status_(-1) {}
 
 CeresMinimizer::~CeresMinimizer() {}
 
@@ -48,6 +49,7 @@ void CeresMinimizer::Clear() {
   edm_ = 0.0;
   numDiffStep_ = 1e-4;
   forceNumeric_ = false;
+  status_ = -1;
 }
 
 void CeresMinimizer::SetFunction(const ROOT::Math::IMultiGenFunction &func) {
@@ -101,14 +103,20 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
                                             double *residuals,
                                             double **jacobians) const {
   const double *x = parameters[0];
-  double fval = (*func)(x);
-  double safeFval = std::max(fval, 0.0);
-  double sqrtFval = std::sqrt(safeFval);
-  residuals[0] = sqrtFval;
+  const double fval = (*func)(x);
+  // combine often offsets the objective so that fval can be zero at the
+  // starting point.  If we used r = sqrt(fval) the Jacobian would vanish at
+  // fval=0 and Ceres would immediately declare convergence.  Introduce a small
+  // epsilon and use r = sqrt(2*(f+eps)) so that J^T r reproduces the gradient
+  // of the original function while keeping the problem well defined.
+  constexpr double eps = 1e-12;
+  const double safeF = std::max(fval, 0.0) + eps;
+  const double sqrtF = std::sqrt(2.0 * safeF);
+  residuals[0] = sqrtF;
   if (jacobians && jacobians[0]) {
     std::vector<double> grad(func->NDim());
-    func->Gradient(x, &grad[0]);
-    double coeff = sqrtFval > 0 ? 0.5 / sqrtFval : 0.0;
+    func->Gradient(x, grad.data());
+    const double coeff = 1.0 / sqrtF;
     for (unsigned int i = 0; i < func->NDim(); ++i)
       jacobians[0][i] = coeff * grad[i];
   }
@@ -123,14 +131,15 @@ struct NumericCostFunction : public ceres::CostFunction {
   }
   bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const override {
     const double *x = parameters[0];
-    double fval = (*func)(x);
-    double safeFval = std::max(fval, 0.0);
-    double sqrtFval = std::sqrt(safeFval);
-    residuals[0] = sqrtFval;
+    const double fval = (*func)(x);
+    constexpr double eps = 1e-12;
+    const double safeF = std::max(fval, 0.0) + eps;
+    const double sqrtF = std::sqrt(2.0 * safeF);
+    residuals[0] = sqrtF;
     if (jacobians && jacobians[0]) {
       std::vector<double> xtmp(func->NDim());
       std::copy(x, x + func->NDim(), xtmp.begin());
-      double coeff = sqrtFval > 0 ? 0.5 / sqrtFval : 0.0;
+      const double coeff = 1.0 / sqrtF;
       for (unsigned int i = 0; i < func->NDim(); ++i) {
         if (useCentral) {
           xtmp[i] += step;
@@ -400,6 +409,8 @@ bool CeresMinimizer::Minimize() {
       ofs << bestSummary.FullReport() << std::endl;
   }
 
+  status_ = static_cast<int>(bestSummary.termination_type);
+
   if (multiStart > 1 && jitter == 0.0)
     CombineLogger::instance().log(
         "CeresMinimizer.cc", __LINE__, "multi-start requested without jitter; results may be identical", __func__);
@@ -463,22 +474,13 @@ void CeresMinimizer::ComputeGradientAndHessian(const double *x) {
   }
 }
 
-extern "C" ROOT::Math::Minimizer *createCeresMinimizer()
-    __attribute__((visibility("default"), used));
-
-extern "C" ROOT::Math::Minimizer *createCeresMinimizer() {
-  std::cout << "[DEBUG] createCeresMinimizer called" << std::endl;
-  return new CeresMinimizer();
-}
-
 namespace {
-  ROOT::Math::Minimizer *createCeresMinimizer() { return new CeresMinimizer(); }
   struct CeresMinimizerRegister {
     CeresMinimizerRegister() {
       std::cout << "[DEBUG] Registering Ceres plugin" << std::endl;
       gPluginMgr->AddHandler("ROOT::Math::Minimizer", "Ceres",
                              "CeresMinimizer", "CeresMinimizer",
-                             "createCeresMinimizer()");
+                             "CeresMinimizer()");
       std::cout << "[DEBUG] Added handler for class CeresMinimizer in library CeresMinimizer" << std::endl;
     }
   } gCeresMinimizerRegister;
