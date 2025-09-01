@@ -136,6 +136,7 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
              shiftedF),
         __func__);
   }
+
   if (jacobians && jacobians[0]) {
     std::vector<double> grad(func->NDim());
     func->Gradient(x, grad.data());
@@ -170,6 +171,7 @@ struct NumericCostFunction : public ceres::CostFunction {
                shiftedF),
           __func__);
     }
+
     if (jacobians && jacobians[0]) {
       std::vector<double> xtmp(func->NDim());
       std::copy(x, x + func->NDim(), xtmp.begin());
