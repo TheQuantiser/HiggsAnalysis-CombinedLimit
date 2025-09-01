@@ -115,10 +115,17 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
   // true NLL differences are preserved.
   if (!std::isfinite(fval))
     return false;
-  offset_ = std::max(offset_, -fval + 1.0);
-  const double shiftedF = fval + offset_;
+  // Minuit2 minimizes the NLL directly and relies on RooFit's dynamic
+  // offsetting to keep the absolute value near zero.  Mimic this behaviour by
+  // letting the offset grow only if the NLL becomes negative, without forcing
+  // the shifted value to unity.  This preserves the true scale of the NLL so
+  // that function tolerances behave similarly to Minuit2.
+  offset_ = std::max(offset_, -fval);
+  double shiftedF = fval + offset_;
+  // Guard against exactly zero or negative values which would make the square
+  // root ill-defined and introduce infinities in the Jacobian.
   if (!(shiftedF > 0) || !std::isfinite(shiftedF))
-    return false;
+    shiftedF = std::numeric_limits<double>::min();
   const double sqrtF = std::sqrt(2.0 * shiftedF);
   residuals[0] = sqrtF;
   if (std::getenv("CERES_DEBUG_EVAL")) {
@@ -132,7 +139,7 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
   if (jacobians && jacobians[0]) {
     std::vector<double> grad(func->NDim());
     func->Gradient(x, grad.data());
-    const double coeff = 1.0 / sqrtF;
+    const double coeff = (sqrtF > 0) ? 1.0 / sqrtF : 0.0;
     for (unsigned int i = 0; i < func->NDim(); ++i)
       jacobians[0][i] = coeff * grad[i];
   }
@@ -148,14 +155,12 @@ struct NumericCostFunction : public ceres::CostFunction {
   bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const override {
     const double *x = parameters[0];
     const double fval = (*func)(x);
-
     if (!std::isfinite(fval))
       return false;
-    offset_ = std::max(offset_, -fval + 1.0);
-
-    const double shiftedF = fval + offset_;
+    offset_ = std::max(offset_, -fval);
+    double shiftedF = fval + offset_;
     if (!(shiftedF > 0) || !std::isfinite(shiftedF))
-      return false;
+      shiftedF = std::numeric_limits<double>::min();
     const double sqrtF = std::sqrt(2.0 * shiftedF);
     residuals[0] = sqrtF;
     if (std::getenv("CERES_DEBUG_EVAL")) {
@@ -169,7 +174,7 @@ struct NumericCostFunction : public ceres::CostFunction {
     if (jacobians && jacobians[0]) {
       std::vector<double> xtmp(func->NDim());
       std::copy(x, x + func->NDim(), xtmp.begin());
-      const double coeff = 1.0 / sqrtF;
+      const double coeff = (sqrtF > 0) ? 1.0 / sqrtF : 0.0;
       for (unsigned int i = 0; i < func->NDim(); ++i) {
         if (useCentral) {
           xtmp[i] += step;
@@ -366,13 +371,11 @@ bool CeresMinimizer::Minimize() {
           "CeresMinimizer.cc", __LINE__,
           Form("multi-start %u usable=%d term=%d fval %.6f raw %.6f offset %.6f",
                it, summary.IsSolutionUsable(), summary.termination_type, fval,
-
                summary.final_cost, offset),
           __func__);
     if (!summary.IsSolutionUsable() && verbose)
       CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
                                    "solution unusable", __func__);
-
     if (fval < bestFval) {
       if (!summary.IsSolutionUsable() && verbose)
         CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
@@ -400,11 +403,9 @@ bool CeresMinimizer::Minimize() {
     CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
                                    Form("best offset %.6f", bestOffset),
                                    __func__);
-
   if (!bestSummary.IsSolutionUsable())
     CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
                                  "best solution flagged unusable", __func__);
-
   fMinVal_ = bestFval;
   grad_.assign(nDim_, 0.0);
   hess_.assign(nDim_ * nDim_, 0.0);
