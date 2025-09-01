@@ -3,6 +3,8 @@
 #include <Math/MinimizerOptions.h>
 #include <TPluginManager.h>
 #include <TMatrixDSym.h>
+#include <TMatrixD.h>
+#include <TDecompSVD.h>
 #include <ceres/loss_function.h>
 #include <ceres/covariance.h>
 #include <TString.h>
@@ -355,6 +357,15 @@ bool CeresMinimizer::Minimize() {
   bool covOK = false;
   if (bestProblem && bestSummary.IsSolutionUsable()) {
     ceres::Covariance::Options covOpts;
+    std::string covAlgo =
+        std::getenv("CERES_COVARIANCE_ALGO") ? std::getenv("CERES_COVARIANCE_ALGO") : std::string("dense_svd");
+    if (covAlgo == "dense_svd") {
+      covOpts.algorithm_type = ceres::DENSE_SVD;
+    } else if (covAlgo == "sparse_qr") {
+      covOpts.algorithm_type = ceres::SPARSE_QR;
+    }
+    if (const char *env = std::getenv("CERES_COVARIANCE_MIN_RCN"))
+      covOpts.min_reciprocal_condition_number = std::atof(env);
     ceres::Covariance covariance(covOpts);
     std::vector<std::pair<const double *, const double *>> blocks;
     blocks.emplace_back(x_.data(), x_.data());
@@ -366,7 +377,14 @@ bool CeresMinimizer::Minimize() {
         for (unsigned int j = 0; j < nDim_; ++j)
           covmat(i, j) = cov_[i * nDim_ + j];
       TMatrixDSym hmat(covmat);
-      hmat.Invert();
+      TMatrixD tmp(hmat);
+      TDecompSVD svd(tmp);
+      if (svd.Decompose()) {
+        TMatrixD inv = svd.Invert();
+        for (int i = 0; i < inv.GetNrows(); ++i)
+          for (int j = 0; j < inv.GetNcols(); ++j)
+            hmat(i, j) = 0.5 * (inv(i, j) + inv(j, i));
+      }
       for (unsigned int i = 0; i < nDim_; ++i) {
         for (unsigned int j = 0; j < nDim_; ++j) {
           hess_[i * nDim_ + j] = hmat(i, j);
@@ -386,7 +404,14 @@ bool CeresMinimizer::Minimize() {
       for (unsigned int i = 0; i < nDim_; ++i)
         for (unsigned int j = 0; j < nDim_; ++j)
           hmat(i, j) = hess_[i * nDim_ + j];
-      hmat.Invert();
+      TMatrixD tmp(hmat);
+      TDecompSVD svd(tmp);
+      if (svd.Decompose()) {
+        TMatrixD inv = svd.Invert();
+        for (int i = 0; i < inv.GetNrows(); ++i)
+          for (int j = 0; j < inv.GetNcols(); ++j)
+            hmat(i, j) = 0.5 * (inv(i, j) + inv(j, i));
+      }
       for (unsigned int i = 0; i < nDim_; ++i) {
         for (unsigned int j = 0; j < nDim_; ++j) {
           cov_[i * nDim_ + j] = hmat(i, j);
