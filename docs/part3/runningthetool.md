@@ -137,6 +137,8 @@ Additional flags allow direct control over the Ceres solver:
 * `--cminCeresJitterDist arg`: choose jitter distribution `uniform` or `gaussian`.
 * `--cminCeresBoundRelax arg`: relax parameter bounds by this amount.
 * `--cminCeresAutoThreads`: use hardware concurrency if thread count not specified.
+* `--cminCeresCovAlgo arg`: covariance computation algorithm (`dense_svd`, `sparse_qr`, …).
+* `--cminCeresCovMinRCN arg`: minimum reciprocal condition number used in covariance computation (default `1e-12`).
 
 Ceres will fall back to numerical derivatives if an analytic gradient is not provided by the likelihood function.
 
