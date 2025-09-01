@@ -151,9 +151,6 @@ void FitterAlgoBase::applyOptionsBase(const boost::program_options::variables_ma
     minimizerAlgoForMinos_ = Form("%s,%s",
                                   ROOT::Math::MinimizerOptions::DefaultMinimizerType().c_str(),
                                   ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo().c_str());
-    if (ROOT::Math::MinimizerOptions::DefaultMinimizerType() == std::string("Ceres")) {
-      minimizerAlgoForMinos_ = "Minuit2,Migrad";
-    }
   }
   if (!vm.count("setRobustFitTolerance") || vm["setRobustFitTolerance"].defaulted()) {
     minimizerToleranceForMinos_ = ROOT::Math::MinimizerOptions::
