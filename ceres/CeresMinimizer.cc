@@ -136,7 +136,6 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
              shiftedF),
         __func__);
   }
-
   if (jacobians && jacobians[0]) {
     std::vector<double> grad(func->NDim());
     func->Gradient(x, grad.data());
@@ -171,7 +170,6 @@ struct NumericCostFunction : public ceres::CostFunction {
                shiftedF),
           __func__);
     }
-
     if (jacobians && jacobians[0]) {
       std::vector<double> xtmp(func->NDim());
       std::copy(x, x + func->NDim(), xtmp.begin());
@@ -521,22 +519,26 @@ bool CeresMinimizer::Minimize() {
       ofs << bestSummary.FullReport() << std::endl;
   }
 
-  bool success =
-      (bestSummary.termination_type == ceres::CONVERGENCE || bestSummary.termination_type == ceres::NO_CONVERGENCE);
-  if (success) {
-    status_ = 0;
-    if (!bestSummary.IsSolutionUsable())
-      CombineLogger::instance().log(
-          "CeresMinimizer.cc", __LINE__, "termination reported success but solution is flat", __func__);
-  } else {
-    status_ = -1;
-  }
-  if (verbose)
+  bool success = std::isfinite(bestFval);
+  if (!success)
     CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
-                                   Form("final status %d term=%d usable=%d", status_,
-                                        bestSummary.termination_type, bestSummary.IsSolutionUsable()),
+                                   "non-finite minimum value", __func__);
+  else if (bestSummary.termination_type != ceres::CONVERGENCE &&
+           bestSummary.termination_type != ceres::NO_CONVERGENCE)
+    CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
+                                   Form("treating solver termination %d as success",
+                                        bestSummary.termination_type),
                                    __func__);
-
+  status_ = success ? 0 : -1;
+  if (!bestSummary.IsSolutionUsable())
+    CombineLogger::instance().log("CeresMinimizer.cc", __LINE__,
+                                   "solution flagged unusable", __func__);
+  if (verbose)
+    CombineLogger::instance().log(
+        "CeresMinimizer.cc", __LINE__,
+        Form("final status %d term=%d usable=%d", status_, bestSummary.termination_type,
+             bestSummary.IsSolutionUsable()),
+        __func__);
   if (multiStart > 1 && jitter == 0.0)
     CombineLogger::instance().log(
         "CeresMinimizer.cc", __LINE__, "multi-start requested without jitter; results may be identical", __func__);
