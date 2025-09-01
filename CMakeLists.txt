@@ -25,9 +25,9 @@ find_package(Boost CONFIG REQUIRED COMPONENTS program_options filesystem)
 # The Ceres minimizer is optional. For nonstandard installations (e.g. conda)
 # set Ceres_DIR to the directory containing CeresConfig.cmake so that
 # find_package can locate it.
-find_package(Ceres)
+find_package(Ceres QUIET HINTS $ENV{CERES_PREFIX})
 if(NOT Ceres_FOUND)
-  message(STATUS "Ceres not found. If installed in a nonstandard location (e.g. conda), set Ceres_DIR to the path containing CeresConfig.cmake")
+  message(STATUS "Ceres not found. If installed in a nonstandard location (e.g. conda), set Ceres_DIR or CERES_PREFIX to the path containing CeresConfig.cmake")
 endif()
 
 if(cminDefaultMinimizerType STREQUAL "Ceres" AND NOT Ceres_FOUND)

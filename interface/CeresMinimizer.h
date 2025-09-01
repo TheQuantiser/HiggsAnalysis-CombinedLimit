@@ -9,7 +9,11 @@ using RootIMultiGradFunction = ROOT::Math::IGradientFunctionMultiDim;
 #include "Math/IFunction.h"
 using RootIMultiGradFunction = ROOT::Math::IMultiGradFunction;
 #endif
+#if __has_include(<ceres/ceres.h>)
 #include <ceres/ceres.h>
+#else
+#error "Ceres headers not found. Set CERES_PREFIX to the Ceres installation or install Ceres."
+#endif
 #include <string>
 #include <string_view>
 #include <vector>
