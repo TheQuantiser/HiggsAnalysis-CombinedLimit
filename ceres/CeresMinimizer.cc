@@ -465,12 +465,14 @@ void CeresMinimizer::ComputeGradientAndHessian(const double *x) {
 
 extern "C" ROOT::Math::Minimizer *createCeresMinimizer()
     __attribute__((visibility("default"), used));
+
 extern "C" ROOT::Math::Minimizer *createCeresMinimizer() {
   std::cout << "[DEBUG] createCeresMinimizer called" << std::endl;
   return new CeresMinimizer();
 }
 
 namespace {
+  ROOT::Math::Minimizer *createCeresMinimizer() { return new CeresMinimizer(); }
   struct CeresMinimizerRegister {
     CeresMinimizerRegister() {
       std::cout << "[DEBUG] Registering Ceres plugin" << std::endl;
