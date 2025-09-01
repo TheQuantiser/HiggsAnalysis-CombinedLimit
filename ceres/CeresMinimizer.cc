@@ -434,13 +434,22 @@ bool CeresMinimizer::Minimize() {
       ofs << bestSummary.FullReport() << std::endl;
   }
 
-  status_ = static_cast<int>(bestSummary.termination_type);
+  bool success =
+      (bestSummary.termination_type == ceres::CONVERGENCE || bestSummary.termination_type == ceres::NO_CONVERGENCE);
+  if (success) {
+    status_ = 0;
+    if (!bestSummary.IsSolutionUsable())
+      CombineLogger::instance().log(
+          "CeresMinimizer.cc", __LINE__, "termination reported success but solution is flat", __func__);
+  } else {
+    status_ = -1;
+  }
 
   if (multiStart > 1 && jitter == 0.0)
     CombineLogger::instance().log(
         "CeresMinimizer.cc", __LINE__, "multi-start requested without jitter; results may be identical", __func__);
 
-  return bestSummary.IsSolutionUsable();
+  return success;
 }
 
 void CeresMinimizer::Gradient(const double *x, double *grad) const {
@@ -503,9 +512,7 @@ namespace {
   struct CeresMinimizerRegister {
     CeresMinimizerRegister() {
       std::cout << "[DEBUG] Registering Ceres plugin" << std::endl;
-      gPluginMgr->AddHandler("ROOT::Math::Minimizer", "Ceres",
-                             "CeresMinimizer", "CeresMinimizer",
-                             "CeresMinimizer()");
+      gPluginMgr->AddHandler("ROOT::Math::Minimizer", "Ceres", "CeresMinimizer", "CeresMinimizer", "CeresMinimizer()");
       std::cout << "[DEBUG] Added handler for class CeresMinimizer in library CeresMinimizer" << std::endl;
     }
   } gCeresMinimizerRegister;
