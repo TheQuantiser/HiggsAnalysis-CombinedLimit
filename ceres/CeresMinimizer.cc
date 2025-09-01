@@ -116,6 +116,7 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
   if (!std::isfinite(fval))
     return false;
   offset_ = std::max(offset_, -fval + 1.0);
+
   const double shiftedF = fval + offset_;
   if (!(shiftedF > 0) || !std::isfinite(shiftedF))
     return false;
@@ -128,6 +129,7 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
              shiftedF),
         __func__);
   }
+
   if (jacobians && jacobians[0]) {
     std::vector<double> grad(func->NDim());
     func->Gradient(x, grad.data());
@@ -147,9 +149,11 @@ struct NumericCostFunction : public ceres::CostFunction {
   bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const override {
     const double *x = parameters[0];
     const double fval = (*func)(x);
+
     if (!std::isfinite(fval))
       return false;
     offset_ = std::max(offset_, -fval + 1.0);
+
     const double shiftedF = fval + offset_;
     if (!(shiftedF > 0) || !std::isfinite(shiftedF))
       return false;
@@ -162,6 +166,7 @@ struct NumericCostFunction : public ceres::CostFunction {
                shiftedF),
           __func__);
     }
+
     if (jacobians && jacobians[0]) {
       std::vector<double> xtmp(func->NDim());
       std::copy(x, x + func->NDim(), xtmp.begin());
