@@ -355,15 +355,13 @@ bool CeresMinimizer::Minimize() {
   bool covOK = false;
   if (bestProblem && bestSummary.IsSolutionUsable()) {
     ceres::Covariance::Options covOpts;
-    std::string covAlgo = std::getenv("CERES_COVARIANCE_ALGO") ? std::getenv("CERES_COVARIANCE_ALGO") : std::string("dense_svd");
-    if (covAlgo == "dense_svd")
+    std::string covAlgo =
+        std::getenv("CERES_COVARIANCE_ALGO") ? std::getenv("CERES_COVARIANCE_ALGO") : std::string("dense_svd");
+    if (covAlgo == "dense_svd") {
       covOpts.algorithm_type = ceres::DENSE_SVD;
-    else if (covAlgo == "sparse_qr")
+    } else if (covAlgo == "sparse_qr") {
       covOpts.algorithm_type = ceres::SPARSE_QR;
-    else if (covAlgo == "dense_qr")
-      covOpts.algorithm_type = ceres::DENSE_QR;
-    else if (covAlgo == "sparse_normal_cholesky")
-      covOpts.algorithm_type = ceres::SPARSE_NORMAL_CHOLESKY;
+    }
     if (const char *env = std::getenv("CERES_COVARIANCE_MIN_RCN"))
       covOpts.min_reciprocal_condition_number = std::atof(env);
     ceres::Covariance covariance(covOpts);

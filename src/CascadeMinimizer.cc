@@ -483,14 +483,13 @@ bool CascadeMinimizer::minimize(int verbose, bool cascade) {
       simnll->setZeroPoint();
     if (optConst)
       minimizer_->optimizeConst(std::max(0, optConst));
-    if (rooFitOffset)
+    if (rooFitOffset) {
       minimizer_->setOffsetting(std::max(0, rooFitOffset));
-      {
-        std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-        std::string algo =
-            (type == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
-        minimizer_->minimize(type.c_str(), algo.c_str());
-      }
+    }
+    std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+    std::string algo =
+        (type == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+    minimizer_->minimize(type.c_str(), algo.c_str());
     if (simnll)
       simnll->clearZeroPoint();
     utils::setAllConstant(frozen, false);
@@ -1281,7 +1280,7 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
   }
   if (vm.count("cminCeresCovAlgo")) {
     std::string v = vm["cminCeresCovAlgo"].as<std::string>();
-    static const std::set<std::string> allowed{"dense_svd", "sparse_qr", "dense_qr", "sparse_normal_cholesky"};
+    static const std::set<std::string> allowed{"dense_svd", "sparse_qr"};
     if (!allowed.count(v)) {
       CombineLogger::instance().log("CascadeMinimizer.cc",
                                     __LINE__,
