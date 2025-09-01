@@ -73,6 +73,8 @@ public:
   unsigned int NDim() const override { return nDim_; }
   unsigned int NFree() const override { return nFree_; }
 
+  int Status() const override { return status_; }
+
   bool ProvidesError() const override { return true; }
   const double *Errors() const override { return errors_.empty() ? nullptr : errors_.data(); }
   double CovMatrix(unsigned int i, unsigned int j) const override {
@@ -115,6 +117,8 @@ private:
 
   double numDiffStep_;
   bool forceNumeric_;
+
+  int status_;
 };
 
 #endif
