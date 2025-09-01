@@ -101,6 +101,7 @@ private:
     CostFunction(const RootIMultiGradFunction *f);
     bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const override;
     const RootIMultiGradFunction *func;
+    mutable double offset_;
   };
 
   const ROOT::Math::IMultiGenFunction *func_;

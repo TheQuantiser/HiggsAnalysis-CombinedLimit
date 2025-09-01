@@ -97,7 +97,7 @@ bool CeresMinimizer::SetFixedVariable(unsigned int i, const std::string &, doubl
   return true;
 }
 
-CeresMinimizer::CostFunction::CostFunction(const RootIMultiGradFunction *f) : func(f) {
+CeresMinimizer::CostFunction::CostFunction(const RootIMultiGradFunction *f) : func(f), offset_(0.0) {
   set_num_residuals(1);
   mutable_parameter_block_sizes()->push_back(f->NDim());
 }
@@ -107,18 +107,15 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
                                             double **jacobians) const {
   const double *x = parameters[0];
   const double fval = (*func)(x);
-  // combine often offsets the objective so that fval can be zero at the
-  // starting point.  If we used r = sqrt(fval) the Jacobian would vanish at
-  // fval=0 and Ceres would immediately declare convergence.  Introduce a small
-  // epsilon and use r = sqrt(2*(f+eps)) so that J^T r reproduces the gradient
-  // of the original function while keeping the problem well defined.  Do not
-  // clamp fval to zero so that negative contributions to the NLL are still
-  // respected.
-  constexpr double eps = 1e-12;
-  double safeF = fval + eps;
-  if (safeF <= 0)
-    safeF = eps;
-  const double sqrtF = std::sqrt(2.0 * safeF);
+
+  // combine often offsets the objective so that fval can be zero or even
+  // negative at the starting point. Shift the objective dynamically to keep
+  // the argument of the square root positive while leaving the gradient of the
+  // original function unchanged.
+  if (fval + offset_ <= 0)
+    offset_ = -fval + 1.0;
+  const double shiftedF = fval + offset_;
+  const double sqrtF = std::sqrt(2.0 * shiftedF);
   residuals[0] = sqrtF;
   if (jacobians && jacobians[0]) {
     std::vector<double> grad(func->NDim());
@@ -132,18 +129,17 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
 
 struct NumericCostFunction : public ceres::CostFunction {
   NumericCostFunction(const ROOT::Math::IMultiGenFunction *f, double step, bool central)
-      : func(f), step(step), useCentral(central) {
+      : func(f), step(step), useCentral(central), offset_(0.0) {
     set_num_residuals(1);
     mutable_parameter_block_sizes()->push_back(f->NDim());
   }
   bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const override {
     const double *x = parameters[0];
     const double fval = (*func)(x);
-    constexpr double eps = 1e-12;
-    double safeF = fval + eps;
-    if (safeF <= 0)
-      safeF = eps;
-    const double sqrtF = std::sqrt(2.0 * safeF);
+    if (fval + offset_ <= 0)
+      offset_ = -fval + 1.0;
+    const double shiftedF = fval + offset_;
+    const double sqrtF = std::sqrt(2.0 * shiftedF);
     residuals[0] = sqrtF;
     if (jacobians && jacobians[0]) {
       std::vector<double> xtmp(func->NDim());
@@ -170,6 +166,7 @@ struct NumericCostFunction : public ceres::CostFunction {
   const ROOT::Math::IMultiGenFunction *func;
   double step;
   bool useCentral;
+  mutable double offset_;
 };
 
 bool CeresMinimizer::Minimize() {
