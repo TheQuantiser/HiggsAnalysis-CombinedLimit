@@ -140,6 +140,8 @@ Additional flags allow direct control over the Ceres solver:
 * `--cminCeresCovAlgo arg`: covariance computation algorithm (`dense_svd` or `sparse_qr`).
 * `--cminCeresCovMinRCN arg`: minimum reciprocal condition number used in covariance computation (default `1e-12`).
 
+Covariance matrices are inverted using an SVD-based pseudo-inverse so that parameter errors remain well defined even when the matrix is singular or ill conditioned.
+
 Ceres will fall back to numerical derivatives if an analytic gradient is not provided by the likelihood function.
 
 More of these options can be found in the **Cascade Minimizer options** section when running `--help`.
