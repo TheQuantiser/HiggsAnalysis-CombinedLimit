@@ -23,6 +23,11 @@
 #include "../interface/CombineLogger.h"
 
 #include <Math/MinimizerOptions.h>
+#include <Math/Factory.h>
+#include <Math/Minimizer.h>
+#include <TSystem.h>
+#include <memory>
+#include <stdexcept>
 
 using namespace RooStats;
 using namespace std;
@@ -134,6 +139,29 @@ Significance::MinimizerSentry::MinimizerSentry(const std::string &minimizerAlgo,
           __func__);
     }
     ROOT::Math::MinimizerOptions::SetDefaultMinimizer(minimizerAlgo.c_str());
+  }
+
+  if (ROOT::Math::MinimizerOptions::DefaultMinimizerType() == "Ceres") {
+    int loadStatus = gSystem->Load("libCeresMinimizer");
+    if (loadStatus < 0) {
+      CombineLogger::instance().log(
+          "Significance.cc",
+          __LINE__,
+          "[FATAL] Failed to load libCeresMinimizer. Rebuild with Ceres support or choose a supported minimizer.",
+          __func__);
+      throw std::runtime_error("Failed to load libCeresMinimizer");
+    }
+    setenv("CERES_ALGO", ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo().c_str(), 1);
+    std::unique_ptr<ROOT::Math::Minimizer> probe{
+        ROOT::Math::Factory::CreateMinimizer("Ceres", ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo().c_str())};
+    if (!probe) {
+      CombineLogger::instance().log(
+          "Significance.cc",
+          __LINE__,
+          "[FATAL] Failed to create Ceres minimizer. Ensure Ceres is correctly built and available.",
+          __func__);
+      throw std::runtime_error("Failed to create Ceres minimizer");
+    }
   }
 }
 

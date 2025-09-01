@@ -9,6 +9,7 @@
 #include <Math/MinimizerOptions.h>
 #include <Math/IOptions.h>
 #include <Math/Factory.h>
+#include <Math/Minimizer.h>
 #include <RooCategory.h>
 #include <RooNumIntConfig.h>
 #include <TStopwatch.h>
@@ -950,7 +951,6 @@ bool CascadeMinimizer::checkAlgoInType(std::string type, std::string algo) {
 
 void CascadeMinimizer::applyOptions(const boost::program_options::variables_map &vm) {
   using namespace std;
-  int verbose = vm.count("verbose") ? vm["verbose"].as<int>() : 0;
   preScan_ = vm.count("cminPreScan");
   poiOnlyFit_ = vm.count("cminPoiOnlyFit");
   singleNuisFit_ = vm.count("cminSingleNuisFit");
