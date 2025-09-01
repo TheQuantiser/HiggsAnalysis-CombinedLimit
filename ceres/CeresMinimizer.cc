@@ -463,17 +463,18 @@ void CeresMinimizer::ComputeGradientAndHessian(const double *x) {
   }
 }
 
-extern "C" ROOT::Math::Minimizer *createCeresMinimizer() { return new CeresMinimizer(); }
+extern "C" ROOT::Math::Minimizer *createCeresMinimizer() {
+  std::cout << "[DEBUG] createCeresMinimizer called" << std::endl;
+  return new CeresMinimizer();
+}
 
 namespace {
   ROOT::Math::Minimizer *createCeresMinimizer() { return new CeresMinimizer(); }
   struct CeresMinimizerRegister {
     CeresMinimizerRegister() {
-      // Register using the base Minimizer class so no class dictionary for
-      // CeresMinimizer is required when the plugin is loaded.
-      gPluginMgr->AddHandler("ROOT::Math::Minimizer", "Ceres",
-                             "ROOT::Math::Minimizer", "CeresMinimizer",
-                             "createCeresMinimizer()");
+      std::cout << "[DEBUG] Registering Ceres plugin" << std::endl;
+      gPluginMgr->AddHandler("ROOT::Math::Minimizer", "Ceres", "",
+                             "CeresMinimizer", "createCeresMinimizer()");
     }
   } gCeresMinimizerRegister;
 }  // namespace

@@ -1064,6 +1064,8 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
 
   if (defaultMinimizerType_ == "Ceres") {
     int loadStatus = gSystem->Load("libCeresMinimizer");
+    std::cout << "[DEBUG] CascadeMinimizer: gSystem->Load returned " << loadStatus
+              << std::endl;
     if (loadStatus < 0) {
       CombineLogger::instance().log(
           "CascadeMinimizer.cc",
@@ -1073,8 +1075,12 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
       throw std::runtime_error("Failed to load libCeresMinimizer");
     }
     setenv("CERES_ALGO", defaultMinimizerAlgo_.c_str(), 1);
+    std::cout << "[DEBUG] CascadeMinimizer: CERES_ALGO set to "
+              << defaultMinimizerAlgo_ << std::endl;
     std::unique_ptr<ROOT::Math::Minimizer> probe{
         ROOT::Math::Factory::CreateMinimizer("Ceres", defaultMinimizerAlgo_.c_str())};
+    std::cout << "[DEBUG] CascadeMinimizer: probe pointer=" << probe.get()
+              << std::endl;
     if (!probe) {
       CombineLogger::instance().log(
           "CascadeMinimizer.cc",

@@ -144,6 +144,8 @@ Significance::MinimizerSentry::MinimizerSentry(const std::string &minimizerAlgo,
 
   if (ROOT::Math::MinimizerOptions::DefaultMinimizerType() == "Ceres") {
     int loadStatus = gSystem->Load("libCeresMinimizer");
+    std::cout << "[DEBUG] Significance: gSystem->Load returned " << loadStatus
+              << std::endl;
     if (loadStatus < 0) {
       CombineLogger::instance().log(
           "Significance.cc",
@@ -153,8 +155,12 @@ Significance::MinimizerSentry::MinimizerSentry(const std::string &minimizerAlgo,
       throw std::runtime_error("Failed to load libCeresMinimizer");
     }
     setenv("CERES_ALGO", CascadeMinimizer::algo().c_str(), 1);
+    std::cout << "[DEBUG] Significance: CERES_ALGO set to "
+              << CascadeMinimizer::algo() << std::endl;
     std::unique_ptr<ROOT::Math::Minimizer> probe{
         ROOT::Math::Factory::CreateMinimizer("Ceres", CascadeMinimizer::algo().c_str())};
+    std::cout << "[DEBUG] Significance: probe pointer=" << probe.get()
+              << std::endl;
     if (!probe) {
       CombineLogger::instance().log(
           "Significance.cc",
