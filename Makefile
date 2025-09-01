@@ -92,8 +92,12 @@ CERES_LIBNAME = CeresMinimizer
 CERES_SONAME  = lib$(CERES_LIBNAME).so
 CERES_SRC     = ceres/CeresMinimizer.cc
 CERES_OBJ     = $(OBJ_DIR)/CeresMinimizer.o
-# allow includes and linking from conda or custom installs
-CERES_INC     = $(if $(CONDA_PREFIX),-I${CONDA_PREFIX}/include,)
+CERES_DICT    = $(OBJ_DIR)/a/CeresMinimizerDict.cc
+CERES_DICT_OBJ= $(OBJ_DIR)/a/CeresMinimizerDict.o
+CERES_DICT_HDR= ceres/CeresMinimizer_LinkDef.h
+# allow includes and linking from conda or custom installs; make sure Eigen is visible
+CERES_INC     = $(if $(CONDA_PREFIX),-I${CONDA_PREFIX}/include -I${CONDA_PREFIX}/include/eigen3, \
+                  $(if $(LCG),-I${CPLUS_INCLUDE_PATH}/eigen3, -I$(EIGEN)/include/eigen3))
 CERES_LIB     = $(if $(CONDA_PREFIX),-L${CONDA_PREFIX}/lib,) -lceres -lglog -lgflags
 # glog headers from conda need explicit definitions when not using CMake
 # glog >=0.7 requires explicit opt-in when consuming headers directly
@@ -149,7 +153,13 @@ ifdef CERES
 $(CERES_OBJ): $(CERES_SRC) $(INC_DIR)/CeresMinimizer.h | $(OBJ_DIR)
 	$(CXX) $(CCFLAGS) -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) -c $< -o $@
 
-$(LIB_DIR)/$(CERES_SONAME): $(CERES_OBJ) | $(LIB_DIR)
+$(CERES_DICT): $(INC_DIR)/CeresMinimizer.h $(CERES_DICT_HDR) | $(OBJ_DIR)
+	rootcling -f $@ -s $(CERES_SONAME) -I$(INC_DIR) -I$(SRC_DIR) $(CERES_INC) $(CERES_DEFS) $^
+
+$(CERES_DICT_OBJ): $(CERES_DICT) | $(OBJ_DIR)
+	$(CXX) $(CCFLAGS) -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) -c $< -o $@
+
+$(LIB_DIR)/$(CERES_SONAME): $(CERES_OBJ) $(CERES_DICT_OBJ) | $(LIB_DIR)
 	$(CXX) -shared -fPIC -o $@ $^ $(CERES_LIB) $(ROOTLIBS)
 
 endif
