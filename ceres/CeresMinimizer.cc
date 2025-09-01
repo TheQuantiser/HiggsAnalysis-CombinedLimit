@@ -472,8 +472,10 @@ namespace {
   struct CeresMinimizerRegister {
     CeresMinimizerRegister() {
       std::cout << "[DEBUG] Registering Ceres plugin" << std::endl;
-      gPluginMgr->AddHandler("ROOT::Math::Minimizer", "Ceres", "",
-                             "CeresMinimizer", "createCeresMinimizer()");
+      gPluginMgr->AddHandler("ROOT::Math::Minimizer", "Ceres",
+                             "CeresMinimizer", "CeresMinimizer",
+                             "createCeresMinimizer()");
+      std::cout << "[DEBUG] Added handler for class CeresMinimizer in library CeresMinimizer" << std::endl;
     }
   } gCeresMinimizerRegister;
 }  // namespace
