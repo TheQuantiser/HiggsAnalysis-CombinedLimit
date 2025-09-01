@@ -25,9 +25,9 @@ find_package(Boost CONFIG REQUIRED COMPONENTS program_options filesystem)
 # The Ceres minimizer is optional. For nonstandard installations (e.g. conda)
 # set Ceres_DIR to the directory containing CeresConfig.cmake so that
 # find_package can locate it.
-find_package(Ceres)
+find_package(Ceres QUIET HINTS $ENV{CERES_PREFIX})
 if(NOT Ceres_FOUND)
-  message(STATUS "Ceres not found. If installed in a nonstandard location (e.g. conda), set Ceres_DIR to the path containing CeresConfig.cmake")
+  message(STATUS "Ceres not found. If installed in a nonstandard location (e.g. conda), set Ceres_DIR or CERES_PREFIX to the path containing CeresConfig.cmake")
 endif()
 
 if(cminDefaultMinimizerType STREQUAL "Ceres" AND NOT Ceres_FOUND)
@@ -70,12 +70,26 @@ target_link_libraries(combine PUBLIC ${LIBNAME})
 
 if(Ceres_FOUND)
   message(STATUS "Found Ceres - building CeresMinimizer plugin")
-  ROOT_GENERATE_DICTIONARY(G__CeresMinimizer interface/CeresMinimizer.h LINKDEF ceres/CeresMinimizer_LinkDef.h MODULE CeresMinimizer)
+  ROOT_GENERATE_DICTIONARY(G__CeresMinimizer
+    interface/CeresMinimizer.h
+    LINKDEF ceres/CeresMinimizer_LinkDef.h
+    MODULE CeresMinimizer
+    OPTIONS "-rml CeresMinimizer -rmf ${CMAKE_CURRENT_BINARY_DIR}/libCeresMinimizer.rootmap")
   add_library(CeresMinimizer SHARED ceres/CeresMinimizer.cc G__CeresMinimizer.cxx)
   target_link_libraries(CeresMinimizer PUBLIC ${ROOT_LIBRARIES} Ceres::ceres)
   target_include_directories(CeresMinimizer PUBLIC ${Ceres_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/interface)
+  # Ensure the ROOT dictionary and rootmap are placed next to the plugin library
+  add_custom_command(TARGET CeresMinimizer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_BINARY_DIR}/libCeresMinimizer_rdict.pcm
+            $<TARGET_FILE_DIR:CeresMinimizer>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_BINARY_DIR}/libCeresMinimizer.rootmap
+            $<TARGET_FILE_DIR:CeresMinimizer>)
   install(TARGETS CeresMinimizer LIBRARY DESTINATION lib)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libCeresMinimizer_rdict.pcm DESTINATION lib)
+  install(FILES $<TARGET_FILE_DIR:CeresMinimizer>/libCeresMinimizer_rdict.pcm
+                $<TARGET_FILE_DIR:CeresMinimizer>/libCeresMinimizer.rootmap
+          DESTINATION lib)
 else()
   message(STATUS "Ceres not found - CeresMinimizer plugin will be unavailable")
 endif()

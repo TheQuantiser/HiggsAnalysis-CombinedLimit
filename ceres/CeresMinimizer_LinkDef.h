@@ -3,5 +3,4 @@
 #pragma link off all classes;
 #pragma link off all functions;
 #pragma link C++ class CeresMinimizer+;
-#pragma link C++ function createCeresMinimizer;
 #endif
