@@ -469,6 +469,7 @@ extern "C" ROOT::Math::Minimizer *createCeresMinimizer() {
 }
 
 namespace {
+  ROOT::Math::Minimizer *createCeresMinimizer() { return new CeresMinimizer(); }
   struct CeresMinimizerRegister {
     CeresMinimizerRegister() {
       std::cout << "[DEBUG] Registering Ceres plugin" << std::endl;
