@@ -483,14 +483,13 @@ bool CascadeMinimizer::minimize(int verbose, bool cascade) {
       simnll->setZeroPoint();
     if (optConst)
       minimizer_->optimizeConst(std::max(0, optConst));
-    if (rooFitOffset)
+    if (rooFitOffset) {
       minimizer_->setOffsetting(std::max(0, rooFitOffset));
-      {
-        std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-        std::string algo =
-            (type == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
-        minimizer_->minimize(type.c_str(), algo.c_str());
-      }
+    }
+    std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+    std::string algo =
+        (type == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+    minimizer_->minimize(type.c_str(), algo.c_str());
     if (simnll)
       simnll->clearZeroPoint();
     utils::setAllConstant(frozen, false);
@@ -931,7 +930,13 @@ void CascadeMinimizer::initOptions() {
       boost::program_options::value<double>()->default_value(0.0),
       "Symmetric relaxation applied to parameter bounds")("cminCeresAutoThreads",
                                                           boost::program_options::bool_switch()->default_value(false),
-                                                          "Set Ceres threads to hardware concurrency when unspecified")
+                                                          "Set Ceres threads to hardware concurrency when unspecified")(
+      "cminCeresCovAlgo",
+      boost::program_options::value<std::string>()->default_value("dense_svd"),
+      "Algorithm for Ceres covariance computation (dense_svd, sparse_qr, ...)")(
+      "cminCeresCovMinRCN",
+      boost::program_options::value<double>()->default_value(1e-12),
+      "Minimum reciprocal condition number for Ceres covariance")
       //("cminNuisancePruning", boost::program_options::value<double>(&nuisancePruningThreshold_)->default_value(nuisancePruningThreshold_), "if non-zero, discard constrained nuisances whose effect on the NLL when changing by 0.2*range is less than the absolute value of the threshold; if threshold is negative, repeat afterwards the fit with these floating")
 
       //("cminDefaultIntegratorEpsAbs", boost::program_options::value<double>(), "RooAbsReal::defaultIntegratorConfig()->setEpsAbs(x)")
@@ -1273,6 +1278,27 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
   if (vm["cminCeresAutoThreads"].as<bool>()) {
     setenv("CERES_AUTO_THREADS", "1", 1);
   }
+  if (vm.count("cminCeresCovAlgo")) {
+    std::string v = vm["cminCeresCovAlgo"].as<std::string>();
+    static const std::set<std::string> allowed{"dense_svd", "sparse_qr"};
+    if (!allowed.count(v)) {
+      CombineLogger::instance().log("CascadeMinimizer.cc",
+                                    __LINE__,
+                                    Form("Unknown Ceres covariance algorithm %s, defaulting to dense_svd", v.c_str()),
+                                    __func__);
+      v = "dense_svd";
+    }
+    setenv("CERES_COVARIANCE_ALGO", v.c_str(), 1);
+  }
+  if (vm.count("cminCeresCovMinRCN")) {
+    double val = vm["cminCeresCovMinRCN"].as<double>();
+    if (val <= 0) {
+      val = 1e-12;
+      CombineLogger::instance().log(
+          "CascadeMinimizer.cc", __LINE__, "cminCeresCovMinRCN must be >0, using 1e-12", __func__);
+    }
+    setenv("CERES_COVARIANCE_MIN_RCN", std::to_string(val).c_str(), 1);
+  }
 
   // after applying all options, print a summary of the minimizer configuration
   if (defaultMinimizerType_ == "Ceres") {
@@ -1350,6 +1376,8 @@ void CascadeMinimizer::printCeresConfig(int verbose) {
   logEnv("CERES_FORCE_NUMERIC", "--cminCeresUseNumericGradient");
   logEnv("CERES_PROGRESS", "--cminCeresProgress");
   logEnv("CERES_AUTO_THREADS", "--cminCeresAutoThreads");
+  logEnv("CERES_COVARIANCE_ALGO", "--cminCeresCovAlgo");
+  logEnv("CERES_COVARIANCE_MIN_RCN", "--cminCeresCovMinRCN");
 }
 
 //void CascadeMinimizer::setDefaultIntegrator(RooCategory &cat, const std::string & val) {
