@@ -973,10 +973,23 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
     defaultMinimizerType_ = "Ceres";
   }
   if (defaultMinimizerType_ == "Ceres") {
-    std::string algo = vm.count("cminDefaultMinimizerAlgo")
-                           ? vm["cminDefaultMinimizerAlgo"].as<std::string>()
-                           : (vm.count("cminCeresAlgo") ? vm["cminCeresAlgo"].as<std::string>()
-                                                         : std::string("TrustRegion"));
+    // Determine the Ceres algorithm.  The option --cminDefaultMinimizerAlgo
+    // has highest priority if explicitly specified.  Otherwise fall back to
+    // --cminCeresAlgo when provided, and finally to the built-in default of
+    // TrustRegion.  Using vm.count() alone is insufficient here because the
+    // options have defaults which make count() always true, so we also check
+    // whether the value was explicitly set on the command line.
+    std::string algo;
+    if (vm.count("cminDefaultMinimizerAlgo") &&
+        !vm["cminDefaultMinimizerAlgo"].defaulted()) {
+      algo = vm["cminDefaultMinimizerAlgo"].as<std::string>();
+    } else if (vm.count("cminCeresAlgo") &&
+               !vm["cminCeresAlgo"].defaulted()) {
+      algo = vm["cminCeresAlgo"].as<std::string>();
+    } else {
+      algo = "TrustRegion";
+    }
+
     static const std::set<std::string> allowed{"TrustRegion", "LineSearch"};
     if (!allowed.count(algo)) {
       CombineLogger::instance().log("CascadeMinimizer.cc",

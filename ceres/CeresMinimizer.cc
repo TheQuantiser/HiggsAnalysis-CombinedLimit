@@ -3,6 +3,7 @@
 #include <Math/MinimizerOptions.h>
 #include <TPluginManager.h>
 #include <TMatrixDSym.h>
+#include <iostream>
 #include <ceres/loss_function.h>
 #include <ceres/covariance.h>
 #include <TString.h>
@@ -455,7 +456,9 @@ void CeresMinimizer::ComputeGradientAndHessian(const double *x) {
 namespace {
   struct CeresMinimizerRegister {
     CeresMinimizerRegister() {
+      std::cout << "[DEBUG] Registering Ceres plugin" << std::endl;
       gPluginMgr->AddHandler("ROOT::Math::Minimizer", "Ceres", "CeresMinimizer", "CeresMinimizer", "CeresMinimizer()");
+      std::cout << "[DEBUG] Added handler for class CeresMinimizer in library CeresMinimizer" << std::endl;
     }
   } gCeresMinimizerRegister;
 }  // namespace
