@@ -157,7 +157,7 @@ $(CERES_DICT): $(INC_DIR)/CeresMinimizer.h $(CERES_DICT_HDR) | $(OBJ_DIR)
 	rootcling -f $@ -s $(CERES_SONAME) -I$(INC_DIR) -I$(SRC_DIR) $(CERES_INC) $(CERES_DEFS) $^
 
 $(CERES_DICT_OBJ): $(CERES_DICT) | $(OBJ_DIR)
-	$(CXX) $(CCFLAGS) -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) -c $< -o $@
+	$(CXX) $(CCFLAGS) -I . -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) -c $< -o $@
 
 $(LIB_DIR)/$(CERES_SONAME): $(CERES_OBJ) $(CERES_DICT_OBJ) | $(LIB_DIR)
 	$(CXX) -shared -fPIC -o $@ $^ $(CERES_LIB) $(ROOTLIBS)
