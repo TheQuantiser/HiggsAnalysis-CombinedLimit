@@ -154,9 +154,9 @@ $(CERES_OBJ): $(CERES_SRC) $(INC_DIR)/CeresMinimizer.h | $(OBJ_DIR)
 	$(CXX) $(CCFLAGS) -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) -c $< -o $@
 
 $(CERES_DICT): $(INC_DIR)/CeresMinimizer.h $(CERES_DICT_HDR) | $(OBJ_DIR) $(LIB_DIR)
-       rootcling -f $@ -s $(CERES_SONAME) -I$(INC_DIR) -I$(SRC_DIR) $(CERES_INC) $(CERES_DEFS) $^
-       mv $(OBJ_DIR)/a/lib$(CERES_LIBNAME)_rdict.pcm $(LIB_DIR)/
-       mv $(OBJ_DIR)/a/lib$(CERES_LIBNAME).rootmap $(LIB_DIR)/
+	rootcling -f $@ -s $(CERES_SONAME) -I$(INC_DIR) -I$(SRC_DIR) $(CERES_INC) $(CERES_DEFS) $^
+	mv lib$(CERES_LIBNAME)_rdict.pcm $(LIB_DIR)/
+	mv lib$(CERES_LIBNAME).rootmap $(LIB_DIR)/
 
 $(CERES_DICT_OBJ): $(CERES_DICT) | $(OBJ_DIR)
 	$(CXX) $(CCFLAGS) -I . -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) -c $< -o $@
