@@ -37,8 +37,11 @@ CCFLAGS = -D STANDALONE $(ROOTCFLAGS) -g -fPIC -O2 -pthread -pipe -Werror=main -
 LIBS = $(ROOTLIBS) -lgsl -lRooFit -lRooFitCore -lRooStats -lMinuit -lMathMore -lFoam -lHistFactory -lboost_filesystem -lboost_program_options -lboost_system -lvdt
 
 ifeq ($(CONDA), 1)
-CCFLAGS += -I${CONDA_PREFIX}/include/boost -I ${CONDA_PREFIX}/include/vdt -I ${CONDA_PREFIX}/include/gsl -I ${CONDA_PREFIX}/include/eigen3 
-LIBS += -L${CONDA_PREFIX}/lib 
+ifndef CONDA_PREFIX
+$(error CONDA=1 requires CONDA_PREFIX to be set; activate the conda environment)
+endif
+CCFLAGS += -I${CONDA_PREFIX}/include/boost -I ${CONDA_PREFIX}/include/vdt -I ${CONDA_PREFIX}/include/gsl -I ${CONDA_PREFIX}/include/eigen3
+LIBS += -L${CONDA_PREFIX}/lib
 else ifeq ($(LCG), 1)
 # for some reason, Eigen headers are nested in LCG
 CCFLAGS += -I ${CPLUS_INCLUDE_PATH}/eigen3
