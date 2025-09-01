@@ -392,10 +392,8 @@ double Significance::upperLimitWithMinos(
   double muhat = poi.getVal();
   double limit = 0.0;
   {
-    std::string minAlgo = ROOT::Math::MinimizerOptions::DefaultMinimizerType() == std::string("Ceres")
-                              ? std::string("Minuit2,Migrad")
-                              : ROOT::Math::MinimizerOptions::DefaultMinimizerType() + "," +
-                                    ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+    std::string minAlgo = ROOT::Math::MinimizerOptions::DefaultMinimizerType() + "," +
+                          ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
     MinimizerSentry minimizerConfig(minAlgo, tolerance);
     int minosStat = minim.minos(RooArgSet(poi));
     if (minosStat == -1) {

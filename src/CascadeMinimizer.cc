@@ -8,6 +8,7 @@
 
 #include <Math/MinimizerOptions.h>
 #include <Math/IOptions.h>
+#include <Math/Factory.h>
 #include <RooCategory.h>
 #include <RooNumIntConfig.h>
 #include <TStopwatch.h>
@@ -18,6 +19,7 @@
 #include <cstdlib>
 #include <set>
 #include <stdexcept>
+#include <memory>
 
 boost::program_options::options_description CascadeMinimizer::options_("Cascade Minimizer options");
 std::vector<CascadeMinimizer::Algo> CascadeMinimizer::fallbacks_;
@@ -1063,6 +1065,16 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
       throw std::runtime_error("Failed to load libCeresMinimizer");
     }
     setenv("CERES_ALGO", defaultMinimizerAlgo_.c_str(), 1);
+    std::unique_ptr<ROOT::Math::Minimizer> probe{
+        ROOT::Math::Factory::CreateMinimizer("Ceres", defaultMinimizerAlgo_.c_str())};
+    if (!probe) {
+      CombineLogger::instance().log(
+          "CascadeMinimizer.cc",
+          __LINE__,
+          "[FATAL] Failed to create Ceres minimizer. Ensure Ceres is correctly built and available.",
+          __func__);
+      throw std::runtime_error("Failed to create Ceres minimizer");
+    }
   }
   // Note that the options are not applied again when recreating a CascadeMinimizer so need to set the global attributes (should we make the modifiable options persistant too?)
   ROOT::Math::MinimizerOptions::SetDefaultMinimizer(defaultMinimizerType_.c_str(), defaultMinimizerAlgo_.c_str());
