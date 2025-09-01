@@ -148,12 +148,10 @@ void FitterAlgoBase::applyOptionsBase(const boost::program_options::variables_ma
         "option 'nllbackend' can only take as values 'combine', 'legacy', 'cpu' and 'codegen' (at least for now)\n");
 
   if (!vm.count("setRobustFitAlgo") || vm["setRobustFitAlgo"].defaulted()) {
-    minimizerAlgoForMinos_ = Form("%s,%s",
-                                  ROOT::Math::MinimizerOptions::DefaultMinimizerType().c_str(),
-                                  ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo().c_str());
-    if (ROOT::Math::MinimizerOptions::DefaultMinimizerType() == std::string("Ceres")) {
-      minimizerAlgoForMinos_ = "Minuit2,Migrad";
-    }
+    std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+    std::string algo =
+        (type == std::string("Ceres")) ? CascadeMinimizer::algo() : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+    minimizerAlgoForMinos_ = Form("%s,%s", type.c_str(), algo.c_str());
   }
   if (!vm.count("setRobustFitTolerance") || vm["setRobustFitTolerance"].defaulted()) {
     minimizerToleranceForMinos_ = ROOT::Math::MinimizerOptions::

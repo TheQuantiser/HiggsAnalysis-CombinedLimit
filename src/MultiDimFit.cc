@@ -1022,8 +1022,8 @@ void MultiDimFit::doFixedPoint(RooWorkspace *w, RooAbsReal &nll)
 void MultiDimFit::doContour2D(RooWorkspace *, RooAbsReal &nll) 
 {
     if (poi_.size() != 2) throw std::logic_error("Contour2D works only in 2 dimensions");
-    RooRealVar *xv = poiVars_[0]; double x0 = poiVals_[0]; double &x = poiVals_[0];
-    RooRealVar *yv = poiVars_[1]; double y0 = poiVals_[1]; double &y = poiVals_[1];
+    RooRealVar *xv = poiVars_[0]; double x0 = poiVals_[0]; float &x = poiVals_[0];
+    RooRealVar *yv = poiVars_[1]; double y0 = poiVals_[1]; float &y = poiVals_[1];
 
     double threshold = nll.getVal() + 0.5*ROOT::Math::chisquared_quantile_c(1-cl,2+nOtherFloatingPoi_);
     if (verbose>0) CombineLogger::instance().log("MultiDimFit.cc",__LINE__,std::string(Form("Best fit point is for %s, %s, = %.4f,%.4f",xv->GetName(),yv->GetName(),x0,y0)),__func__);

@@ -8,6 +8,8 @@
 
 #include <Math/MinimizerOptions.h>
 #include <Math/IOptions.h>
+#include <Math/Factory.h>
+#include <Math/Minimizer.h>
 #include <RooCategory.h>
 #include <RooNumIntConfig.h>
 #include <TStopwatch.h>
@@ -18,6 +20,7 @@
 #include <cstdlib>
 #include <set>
 #include <stdexcept>
+#include <memory>
 
 boost::program_options::options_description CascadeMinimizer::options_("Cascade Minimizer options");
 std::vector<CascadeMinimizer::Algo> CascadeMinimizer::fallbacks_;
@@ -107,7 +110,8 @@ bool CascadeMinimizer::improve(int verbose, bool cascade, bool forceResetMinimiz
 
   minimizer_->setStrategy(strategy_);
   std::string nominalType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-  std::string nominalAlgo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+  std::string nominalAlgo =
+      (nominalType == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
   double nominalTol(ROOT::Math::MinimizerOptions::DefaultTolerance());
   minimizer_->setEps(nominalTol);
   if (approxPreFitTolerance_ > 0) {
@@ -182,8 +186,9 @@ bool CascadeMinimizer::improve(int verbose, bool cascade, bool forceResetMinimiz
 bool CascadeMinimizer::improveOnce(int verbose, bool noHesse) {
   static int optConst = runtimedef::get("MINIMIZER_optimizeConst");
   static int rooFitOffset = runtimedef::get("MINIMIZER_rooFitOffset");
-  std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-  std::string myAlgo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+    std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+    std::string myAlgo =
+        (myType == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
   int myStrategy = ROOT::Math::MinimizerOptions::DefaultStrategy();
   bool outcome = false;
   double tol = ROOT::Math::MinimizerOptions::DefaultTolerance();
@@ -291,8 +296,9 @@ bool CascadeMinimizer::minos(const RooArgSet &params, int verbose) {
   if (!minimizer_.get())
     remakeMinimizer();
   minimizer_->setPrintLevel(verbose - 1);  // for debugging
-  std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-  std::string myAlgo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+    std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+    std::string myAlgo =
+        (myType == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
 
   if (setZeroPoint_) {
     cacheutils::CachingSimNLL *simnll = dynamic_cast<cacheutils::CachingSimNLL *>(&nll_);
@@ -351,8 +357,9 @@ bool CascadeMinimizer::hesse(int verbose) {
   if (!minimizer_.get())
     remakeMinimizer();
   minimizer_->setPrintLevel(verbose - 1);  // for debugging
-  std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-  std::string myAlgo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+    std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+    std::string myAlgo =
+        (myType == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
 
   if (setZeroPoint_) {
     cacheutils::CachingSimNLL *simnll = dynamic_cast<cacheutils::CachingSimNLL *>(&nll_);
@@ -478,8 +485,12 @@ bool CascadeMinimizer::minimize(int verbose, bool cascade) {
       minimizer_->optimizeConst(std::max(0, optConst));
     if (rooFitOffset)
       minimizer_->setOffsetting(std::max(0, rooFitOffset));
-    minimizer_->minimize(ROOT::Math::MinimizerOptions::DefaultMinimizerType().c_str(),
-                         ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo().c_str());
+      {
+        std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+        std::string algo =
+            (type == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+        minimizer_->minimize(type.c_str(), algo.c_str());
+      }
     if (simnll)
       simnll->clearZeroPoint();
     utils::setAllConstant(frozen, false);
@@ -948,7 +959,6 @@ bool CascadeMinimizer::checkAlgoInType(std::string type, std::string algo) {
 
 void CascadeMinimizer::applyOptions(const boost::program_options::variables_map &vm) {
   using namespace std;
-  int verbose = vm.count("verbose") ? vm["verbose"].as<int>() : 0;
   preScan_ = vm.count("cminPreScan");
   poiOnlyFit_ = vm.count("cminPoiOnlyFit");
   singleNuisFit_ = vm.count("cminSingleNuisFit");
@@ -1054,6 +1064,8 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
 
   if (defaultMinimizerType_ == "Ceres") {
     int loadStatus = gSystem->Load("libCeresMinimizer");
+    std::cout << "[DEBUG] CascadeMinimizer: gSystem->Load returned " << loadStatus
+              << std::endl;
     if (loadStatus < 0) {
       CombineLogger::instance().log(
           "CascadeMinimizer.cc",
@@ -1063,6 +1075,20 @@ void CascadeMinimizer::applyOptions(const boost::program_options::variables_map 
       throw std::runtime_error("Failed to load libCeresMinimizer");
     }
     setenv("CERES_ALGO", defaultMinimizerAlgo_.c_str(), 1);
+    std::cout << "[DEBUG] CascadeMinimizer: CERES_ALGO set to "
+              << defaultMinimizerAlgo_ << std::endl;
+    std::unique_ptr<ROOT::Math::Minimizer> probe{
+        ROOT::Math::Factory::CreateMinimizer("Ceres", defaultMinimizerAlgo_.c_str())};
+    std::cout << "[DEBUG] CascadeMinimizer: probe pointer=" << probe.get()
+              << std::endl;
+    if (!probe) {
+      CombineLogger::instance().log(
+          "CascadeMinimizer.cc",
+          __LINE__,
+          "[FATAL] Failed to create Ceres minimizer. Ensure Ceres is correctly built and available.",
+          __func__);
+      throw std::runtime_error("Failed to create Ceres minimizer");
+    }
   }
   // Note that the options are not applied again when recreating a CascadeMinimizer so need to set the global attributes (should we make the modifiable options persistant too?)
   ROOT::Math::MinimizerOptions::SetDefaultMinimizer(defaultMinimizerType_.c_str(), defaultMinimizerAlgo_.c_str());
