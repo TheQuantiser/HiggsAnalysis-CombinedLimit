@@ -112,8 +112,7 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
   // negative at the starting point. Shift the objective dynamically to keep
   // the argument of the square root positive while leaving the gradient of the
   // original function unchanged.
-  if (fval + offset_ <= 0)
-    offset_ = -fval + 1.0;
+  offset_ = std::max(offset_, -fval + 1.0);
   const double shiftedF = fval + offset_;
   const double sqrtF = std::sqrt(2.0 * shiftedF);
   residuals[0] = sqrtF;
@@ -136,8 +135,7 @@ struct NumericCostFunction : public ceres::CostFunction {
   bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const override {
     const double *x = parameters[0];
     const double fval = (*func)(x);
-    if (fval + offset_ <= 0)
-      offset_ = -fval + 1.0;
+    offset_ = std::max(offset_, -fval + 1.0);
     const double shiftedF = fval + offset_;
     const double sqrtF = std::sqrt(2.0 * shiftedF);
     residuals[0] = sqrtF;
@@ -240,6 +238,7 @@ bool CeresMinimizer::Minimize() {
   double bestFval = std::numeric_limits<double>::infinity();
   ceres::Solver::Summary bestSummary;
   std::unique_ptr<ceres::Problem> bestProblem;
+  double bestOffset = 0.0;
 
   std::mt19937 rng(seed);
   std::uniform_real_distribution<double> dist(-1.0, 1.0);
@@ -329,7 +328,12 @@ bool CeresMinimizer::Minimize() {
         summary = altSummary;
       }
     }
-    double fval = (*func_)(x_.data());
+    double offset = 0.0;
+    if (auto c = dynamic_cast<CeresMinimizer::CostFunction *>(cost))
+      offset = c->offset_;
+    else if (auto n = dynamic_cast<NumericCostFunction *>(cost))
+      offset = n->offset_;
+    double fval = summary.final_cost - offset;
     if (verbose)
       CombineLogger::instance().log(
           "CeresMinimizer.cc", __LINE__, Form("multi-start %u fval %.6f", it, fval), __func__);
@@ -338,6 +342,7 @@ bool CeresMinimizer::Minimize() {
       xbest = x_;
       bestSummary = summary;
       bestProblem = std::move(problem);
+      bestOffset = offset;
     }
   }
   if (maxTime > 0.0) {
@@ -350,6 +355,8 @@ bool CeresMinimizer::Minimize() {
 
   x_ = xbest;
   nCalls_ = bestSummary.num_successful_steps + bestSummary.num_unsuccessful_steps;
+  bestSummary.initial_cost -= bestOffset;
+  bestSummary.final_cost -= bestOffset;
   fMinVal_ = bestFval;
   grad_.assign(nDim_, 0.0);
   hess_.assign(nDim_ * nDim_, 0.0);
