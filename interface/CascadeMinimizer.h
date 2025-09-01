@@ -38,8 +38,8 @@ class CascadeMinimizer {
         void setAutoBounds(const RooArgSet *pois) ;
         void setAutoMax(const RooArgSet *pois) ;
         double tolerance() {return defaultMinimizerTolerance_;};
-        std::string algo() {return defaultMinimizerAlgo_;};
-        std::string type() {return defaultMinimizerType_;};
+        static std::string algo() { return defaultMinimizerAlgo_; }
+        static std::string type() { return defaultMinimizerType_; }
         static void printCeresConfig(int verbose);
     private:
         RooAbsReal & nll_;

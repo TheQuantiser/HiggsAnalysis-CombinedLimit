@@ -23,6 +23,11 @@
 #include "../interface/CombineLogger.h"
 
 #include <Math/MinimizerOptions.h>
+#include <Math/Factory.h>
+#include <Math/Minimizer.h>
+#include <TSystem.h>
+#include <memory>
+#include <stdexcept>
 
 using namespace RooStats;
 using namespace std;
@@ -107,7 +112,8 @@ void Significance::applyOptions(const boost::program_options::variables_map &vm)
 
 Significance::MinimizerSentry::MinimizerSentry(const std::string &minimizerAlgo, double tolerance)
     : minimizerTypeBackup(ROOT::Math::MinimizerOptions::DefaultMinimizerType()),
-      minimizerAlgoBackup(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo()),
+      minimizerAlgoBackup(minimizerTypeBackup == "Ceres" ? CascadeMinimizer::algo()
+                                                        : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo()),
       minimizerTollBackup(ROOT::Math::MinimizerOptions::DefaultTolerance()) {
   ROOT::Math::MinimizerOptions::SetDefaultTolerance(tolerance);
   if (minimizerAlgo.find(',') != std::string::npos) {
@@ -134,6 +140,29 @@ Significance::MinimizerSentry::MinimizerSentry(const std::string &minimizerAlgo,
           __func__);
     }
     ROOT::Math::MinimizerOptions::SetDefaultMinimizer(minimizerAlgo.c_str());
+  }
+
+  if (ROOT::Math::MinimizerOptions::DefaultMinimizerType() == "Ceres") {
+    int loadStatus = gSystem->Load("libCeresMinimizer");
+    if (loadStatus < 0) {
+      CombineLogger::instance().log(
+          "Significance.cc",
+          __LINE__,
+          "[FATAL] Failed to load libCeresMinimizer. Rebuild with Ceres support or choose a supported minimizer.",
+          __func__);
+      throw std::runtime_error("Failed to load libCeresMinimizer");
+    }
+    setenv("CERES_ALGO", CascadeMinimizer::algo().c_str(), 1);
+    std::unique_ptr<ROOT::Math::Minimizer> probe{
+        ROOT::Math::Factory::CreateMinimizer("Ceres", CascadeMinimizer::algo().c_str())};
+    if (!probe) {
+      CombineLogger::instance().log(
+          "Significance.cc",
+          __LINE__,
+          "[FATAL] Failed to create Ceres minimizer. Ensure Ceres is correctly built and available.",
+          __func__);
+      throw std::runtime_error("Failed to create Ceres minimizer");
+    }
   }
 }
 
@@ -180,11 +209,13 @@ bool Significance::run(RooWorkspace *w,
     }
     if (preFit_) {
       CloseCoutSentry sentry(verbose < 2);
-      RooFitResult *res =
-          mc_s->GetPdf()->fitTo(data,
-                                RooFit::Save(1),
-                                RooFit::Minimizer(ROOT::Math::MinimizerOptions::DefaultMinimizerType().c_str(),
-                                                  ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo().c_str()));
+        std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+        std::string algo =
+            (type == "Ceres") ? CascadeMinimizer::algo() : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+        RooFitResult *res = mc_s->GetPdf()->fitTo(
+            data,
+            RooFit::Save(1),
+            RooFit::Minimizer(type.c_str(), algo.c_str()));
       if (res == 0 || res->covQual() != 3 || res->edm() > minimizerTolerance_) {
         if (verbose > 1)
           std::cout << "Fit failed (covQual " << (res ? res->covQual() : -1) << ", edm " << (res ? res->edm() : 0)
@@ -392,10 +423,10 @@ double Significance::upperLimitWithMinos(
   double muhat = poi.getVal();
   double limit = 0.0;
   {
-    std::string minAlgo = ROOT::Math::MinimizerOptions::DefaultMinimizerType() == std::string("Ceres")
-                              ? std::string("Minuit2,Migrad")
-                              : ROOT::Math::MinimizerOptions::DefaultMinimizerType() + "," +
-                                    ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+      std::string currentType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+      std::string currentAlgo = currentType == "Ceres" ? CascadeMinimizer::algo()
+                                                        : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+      std::string minAlgo = currentType + "," + currentAlgo;
     MinimizerSentry minimizerConfig(minAlgo, tolerance);
     int minosStat = minim.minos(RooArgSet(poi));
     if (minosStat == -1) {
