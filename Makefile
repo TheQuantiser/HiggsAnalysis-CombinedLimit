@@ -21,7 +21,10 @@
 # These are ignored if either CONDA=1 or LCG=1 is set
 BOOST = /cvmfs/cms.cern.ch/el9_amd64_gcc12/external/boost/1.80.0-87b5de10acd2f2c8a325345ad058b814
 VDT   = /cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/vdt/0.4.3-793cee1e1edef0e54b2bd5cb1f69aec9
-GSL = /cvmfs/cms.cern.ch/el9_amd64_gcc12/external/gsl/2.6-5e2ce72ea2977ff21a2344bbb52daf5c
+GSL   = /cvmfs/cms.cern.ch/el9_amd64_gcc12/external/gsl/2.6-5e2ce72ea2977ff21a2344bbb52daf5c
+# Keep the Eigen installation path in one piece; splitting it across lines left
+# the include directory undefined, yielding "Eigen/Dense: No such file or
+# directory" during compilation when the default standalone paths are used.
 EIGEN = /cvmfs/cms.cern.ch/el9_amd64_gcc12/external/eigen/3bb6a48d8c171cf20b5f8e48bfb4e424fbd4f79e-3ca740c03e68b1a067f3ed0679234a78
 # Compiler and flags -----------------------------------------------------------
 CXX = $(shell root-config --cxx)
@@ -34,16 +37,27 @@ CCFLAGS = -D STANDALONE $(ROOTCFLAGS) -g -fPIC -O2 -pthread -pipe -Werror=main -
 LIBS = $(ROOTLIBS) -lgsl -lRooFit -lRooFitCore -lRooStats -lMinuit -lMathMore -lFoam -lHistFactory -lboost_filesystem -lboost_program_options -lboost_system -lvdt
 
 ifeq ($(CONDA), 1)
-CCFLAGS += -I${CONDA_PREFIX}/include/boost -I ${CONDA_PREFIX}/include/vdt -I ${CONDA_PREFIX}/include/gsl -I ${CONDA_PREFIX}/include/eigen3 
-LIBS += -L${CONDA_PREFIX}/lib 
+ifndef CONDA_PREFIX
+$(error CONDA=1 requires CONDA_PREFIX to be set; activate the conda environment)
+endif
+CCFLAGS += -I${CONDA_PREFIX}/include/boost -I ${CONDA_PREFIX}/include/vdt -I ${CONDA_PREFIX}/include/gsl -I ${CONDA_PREFIX}/include/eigen3
+LIBS += -L${CONDA_PREFIX}/lib
 else ifeq ($(LCG), 1)
 # for some reason, Eigen headers are nested in LCG
 CCFLAGS += -I ${CPLUS_INCLUDE_PATH}/eigen3
 LIBS += -L${CPLUS_INCLUDE_PATH}/../lib
 else
-CCFLAGS += -I$(BOOST)/include -I$(VDT)/include -I$(GSL)/include -I$(EIGEN)/include/eigen3
-LIBS += -L$(BOOST)/lib -L$(VDT)/lib -L$(GSL)/lib 
-endif 
+# Guard each external path so unset variables do not expand to bogus "-I/include"
+# entries, which would otherwise mask real include directories and lead to
+# compilation failures.
+CCFLAGS += $(if $(BOOST),-I$(BOOST)/include) \
+           $(if $(VDT),-I$(VDT)/include) \
+           $(if $(GSL),-I$(GSL)/include) \
+           $(if $(EIGEN),-I$(EIGEN)/include/eigen3)
+LIBS    += $(if $(BOOST),-L$(BOOST)/lib) \
+           $(if $(VDT),-L$(VDT)/lib) \
+           $(if $(GSL),-L$(GSL)/lib)
+endif
 
 # Library name -----------------------------------------------------------------
 LIBNAME=HiggsAnalysisCombinedLimit
@@ -96,9 +110,12 @@ CERES_DICT    = $(OBJ_DIR)/a/CeresMinimizerDict.cc
 CERES_DICT_OBJ= $(OBJ_DIR)/a/CeresMinimizerDict.o
 CERES_DICT_HDR= ceres/CeresMinimizer_LinkDef.h
 # allow includes and linking from conda or custom installs; make sure Eigen is visible
-CERES_INC     = $(if $(CONDA_PREFIX),-I${CONDA_PREFIX}/include -I${CONDA_PREFIX}/include/eigen3, \
-                  $(if $(LCG),-I${CPLUS_INCLUDE_PATH}/eigen3, -I$(EIGEN)/include/eigen3))
-CERES_LIB     = $(if $(CONDA_PREFIX),-L${CONDA_PREFIX}/lib,) -lceres -lglog -lgflags
+CERES_PREFIX  ?=
+CERES_INC     = $(if $(CERES_PREFIX),-I$(CERES_PREFIX)/include -I$(CERES_PREFIX)/include/eigen3, \
+                  $(if $(CONDA_PREFIX),-I${CONDA_PREFIX}/include -I${CONDA_PREFIX}/include/eigen3, \
+                       $(if $(LCG),-I${CPLUS_INCLUDE_PATH}/eigen3, -I$(EIGEN)/include/eigen3)))
+CERES_LIB     = $(if $(CERES_PREFIX),-L$(CERES_PREFIX)/lib, \
+                  $(if $(CONDA_PREFIX),-L${CONDA_PREFIX}/lib,)) -lceres -lglog -lgflags
 # glog headers from conda need explicit definitions when not using CMake
 # glog >=0.7 requires explicit opt-in when consuming headers directly
 CERES_DEFS    = -DGLOG_USE_GLOG_EXPORT -DGLOG_USE_GFLAGS
@@ -153,8 +170,14 @@ ifdef CERES
 $(CERES_OBJ): $(CERES_SRC) $(INC_DIR)/CeresMinimizer.h | $(OBJ_DIR)
 	$(CXX) $(CCFLAGS) -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) -c $< -o $@
 
-$(CERES_DICT): $(INC_DIR)/CeresMinimizer.h $(CERES_DICT_HDR) | $(OBJ_DIR)
-	rootcling -f $@ -s $(CERES_SONAME) -I$(INC_DIR) -I$(SRC_DIR) $(CERES_INC) $(CERES_DEFS) $^
+$(CERES_DICT): $(INC_DIR)/CeresMinimizer.h $(CERES_DICT_HDR) | $(OBJ_DIR) $(LIB_DIR)
+	rootcling -f $@ \
+		-s $(CERES_SONAME) \
+		-rml $(CERES_SONAME) \
+		-rmf lib$(CERES_LIBNAME).rootmap \
+		-I$(INC_DIR) -I$(SRC_DIR) $(CERES_INC) $(CERES_DEFS) $^
+	mv lib$(CERES_LIBNAME)_rdict.pcm $(LIB_DIR)/
+	mv lib$(CERES_LIBNAME).rootmap $(LIB_DIR)/
 
 $(CERES_DICT_OBJ): $(CERES_DICT) | $(OBJ_DIR)
 	$(CXX) $(CCFLAGS) -I . -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) -c $< -o $@
