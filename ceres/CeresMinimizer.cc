@@ -107,6 +107,7 @@ bool CeresMinimizer::CostFunction::Evaluate(double const *const *parameters,
                                             double **jacobians) const {
   const double *x = parameters[0];
   const double fval = (*func)(x);
+
   // combine often offsets the objective so that fval can be zero or even
   // negative at the starting point. Shift the objective dynamically to keep
   // the argument of the square root positive while leaving the gradient of the
