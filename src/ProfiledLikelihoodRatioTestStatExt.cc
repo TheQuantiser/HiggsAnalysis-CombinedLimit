@@ -414,7 +414,10 @@ bool nllutils::robustMinimize(RooAbsReal &nll, RooMinimizer &minim, int verbosit
     cacheutils::CachingSimNLL *simnll = (zeroPoint ?  dynamic_cast<cacheutils::CachingSimNLL *>(&nll) : 0);
     for (int tries = 0, maxtries = 4; tries <= maxtries; ++tries) {
         if (simnll) simnll->setZeroPoint();
-        int status = minim.minimize(ROOT::Math::MinimizerOptions::DefaultMinimizerType().c_str(), ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo().c_str());
+        std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+        std::string algo =
+            (type == std::string("Ceres")) ? CascadeMinimizer::algo() : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+        int status = minim.minimize(type.c_str(), algo.c_str());
         if (simnll) simnll->clearZeroPoint();
         //if (verbosity > 1) res->Print("V");
         if (status == 0 && nll.getVal() > initialNll + 0.02) {
@@ -423,8 +426,9 @@ bool nllutils::robustMinimize(RooAbsReal &nll, RooMinimizer &minim, int verbosit
             DBG(DBG_PLTestStat_main, (printf("\n  --> false minimum, status %d, cov. quality %d, edm %10.7f, nll initial % 10.4f, nll final % 10.4f, change %10.5f\n", status, res->covQual(), res->edm(), initialNll, nll.getVal(), initialNll - nll.getVal())))
             if (pars.get() == 0) pars.reset(nll.getParameters((const RooArgSet*)0));
             *pars = res->floatParsInit();
-            std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-            std::string algo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+              std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+              std::string algo =
+                  (type == std::string("Ceres")) ? CascadeMinimizer::algo() : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
             if (tries == 0) {
                 COUNT_ONE("nllutils::robustMinimize: false minimum (first try)")
                 DBG(DBG_PLTestStat_main, (printf("    ----> Doing a re-scan and re-trying\n")))
@@ -461,8 +465,9 @@ bool nllutils::robustMinimize(RooAbsReal &nll, RooMinimizer &minim, int verbosit
             ret = true;
             break;
         } else if (tries != maxtries) {
-            std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-            std::string algo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+              std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+              std::string algo =
+                  (type == std::string("Ceres")) ? CascadeMinimizer::algo() : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
             std::unique_ptr<RooFitResult> res(do_debug ? minim.save() : 0);
             //PerfCounter::add("Minimizer.save() called for failed minimization"); 
             if (tries > 0 && res->edm() < 0.05*ROOT::Math::MinimizerOptions::DefaultTolerance()) {

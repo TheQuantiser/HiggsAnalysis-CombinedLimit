@@ -110,7 +110,8 @@ bool CascadeMinimizer::improve(int verbose, bool cascade, bool forceResetMinimiz
 
   minimizer_->setStrategy(strategy_);
   std::string nominalType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-  std::string nominalAlgo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+  std::string nominalAlgo =
+      (nominalType == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
   double nominalTol(ROOT::Math::MinimizerOptions::DefaultTolerance());
   minimizer_->setEps(nominalTol);
   if (approxPreFitTolerance_ > 0) {
@@ -185,8 +186,9 @@ bool CascadeMinimizer::improve(int verbose, bool cascade, bool forceResetMinimiz
 bool CascadeMinimizer::improveOnce(int verbose, bool noHesse) {
   static int optConst = runtimedef::get("MINIMIZER_optimizeConst");
   static int rooFitOffset = runtimedef::get("MINIMIZER_rooFitOffset");
-  std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-  std::string myAlgo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+    std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+    std::string myAlgo =
+        (myType == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
   int myStrategy = ROOT::Math::MinimizerOptions::DefaultStrategy();
   bool outcome = false;
   double tol = ROOT::Math::MinimizerOptions::DefaultTolerance();
@@ -294,8 +296,9 @@ bool CascadeMinimizer::minos(const RooArgSet &params, int verbose) {
   if (!minimizer_.get())
     remakeMinimizer();
   minimizer_->setPrintLevel(verbose - 1);  // for debugging
-  std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-  std::string myAlgo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+    std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+    std::string myAlgo =
+        (myType == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
 
   if (setZeroPoint_) {
     cacheutils::CachingSimNLL *simnll = dynamic_cast<cacheutils::CachingSimNLL *>(&nll_);
@@ -354,8 +357,9 @@ bool CascadeMinimizer::hesse(int verbose) {
   if (!minimizer_.get())
     remakeMinimizer();
   minimizer_->setPrintLevel(verbose - 1);  // for debugging
-  std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
-  std::string myAlgo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
+    std::string myType(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+    std::string myAlgo =
+        (myType == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
 
   if (setZeroPoint_) {
     cacheutils::CachingSimNLL *simnll = dynamic_cast<cacheutils::CachingSimNLL *>(&nll_);
@@ -481,8 +485,12 @@ bool CascadeMinimizer::minimize(int verbose, bool cascade) {
       minimizer_->optimizeConst(std::max(0, optConst));
     if (rooFitOffset)
       minimizer_->setOffsetting(std::max(0, rooFitOffset));
-    minimizer_->minimize(ROOT::Math::MinimizerOptions::DefaultMinimizerType().c_str(),
-                         ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo().c_str());
+      {
+        std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+        std::string algo =
+            (type == std::string("Ceres")) ? defaultMinimizerAlgo_ : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+        minimizer_->minimize(type.c_str(), algo.c_str());
+      }
     if (simnll)
       simnll->clearZeroPoint();
     utils::setAllConstant(frozen, false);

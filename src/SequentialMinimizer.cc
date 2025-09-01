@@ -12,6 +12,7 @@
 #include <Math/MinimizerOptions.h>
 #include <Math/Factory.h>
 #include "../interface/ProfilingTools.h"
+#include "../interface/CascadeMinimizer.h"
 
 #define DEBUG_ODM_printf if (0) printf
 //#define DEBUG_SM_printf   if (0) printf
@@ -482,7 +483,10 @@ namespace cmsmath {
 bool cmsmath::SequentialMinimizer::doFullMinim()
 {
     if (fullMinimizer_.get() == 0) {
-        fullMinimizer_.reset(ROOT::Math::Factory::CreateMinimizer(ROOT::Math::MinimizerOptions::DefaultMinimizerType().c_str(), ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo().c_str()));
+        std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+        std::string algo =
+            (type == std::string("Ceres")) ? CascadeMinimizer::algo() : ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo();
+        fullMinimizer_.reset(ROOT::Math::Factory::CreateMinimizer(type.c_str(), algo.c_str()));
         fullMinimizer_->SetTolerance(Tolerance());
         fullMinimizer_->SetStrategy(Strategy()-2);
     }
