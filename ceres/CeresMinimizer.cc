@@ -7,6 +7,7 @@
 #include <TDecompSVD.h>
 #include <ceres/loss_function.h>
 #include <ceres/covariance.h>
+#include <ceres/iteration_callback.h>
 #include <TString.h>
 #include <fstream>
 #include <cstdlib>
@@ -199,6 +200,24 @@ struct NumericCostFunction : public ceres::CostFunction {
   mutable double offset_;
 };
 
+struct IterationLogger : public ceres::IterationCallback {
+  IterationLogger(bool v, const double *off) : verbose(v), offset(off) {}
+  ceres::CallbackReturnType operator()(const ceres::IterationSummary &summary) override {
+    if (verbose) {
+      double fval = summary.cost - (offset ? *offset : 0.0);
+      CombineLogger::instance().log(
+          "CeresMinimizer.cc", __LINE__,
+          Form("iter %d cost %.6f fval %.6f step %.3e grad %.3e rad %.3e", summary.iteration,
+               summary.cost, fval, summary.step_norm, summary.gradient_max_norm,
+               summary.trust_region_radius),
+          __func__);
+    }
+    return ceres::SOLVER_CONTINUE;
+  }
+  bool verbose;
+  const double *offset;
+};
+
 bool CeresMinimizer::Minimize() {
   if (!func_)
     return false;
@@ -345,6 +364,14 @@ bool CeresMinimizer::Minimize() {
     options.num_threads = numThreads;
     options.initial_trust_region_radius = initRadius;
     options.minimizer_progress_to_stdout = progress;
+    const double *offsetPtr = nullptr;
+    if (auto c = dynamic_cast<CeresMinimizer::CostFunction *>(cost))
+      offsetPtr = &c->offset_;
+    else if (auto n = dynamic_cast<NumericCostFunction *>(cost))
+      offsetPtr = &n->offset_;
+    IterationLogger iterLogger(verbose, offsetPtr);
+    options.update_state_every_iteration = true;
+    options.callbacks.push_back(&iterLogger);
     ceres::Solver::Summary summary;
     ceres::Solve(options, problem.get(), &summary);
     if (!summary.IsSolutionUsable()) {
