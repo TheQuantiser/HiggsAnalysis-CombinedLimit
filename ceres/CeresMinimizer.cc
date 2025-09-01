@@ -539,7 +539,6 @@ bool CeresMinimizer::Minimize() {
         Form("final status %d term=%d usable=%d", status_, bestSummary.termination_type,
              bestSummary.IsSolutionUsable()),
         __func__);
-
   if (multiStart > 1 && jitter == 0.0)
     CombineLogger::instance().log(
         "CeresMinimizer.cc", __LINE__, "multi-start requested without jitter; results may be identical", __func__);
