@@ -25,6 +25,7 @@
 #include <Math/MinimizerOptions.h>
 #include <Math/QuantFuncMathCore.h>
 #include <Math/ProbFunc.h>
+#include <map>
 
 using namespace RooStats;
 
@@ -36,7 +37,7 @@ MultiDimFit::Algo MultiDimFit::algo_ = None;
 MultiDimFit::GridType MultiDimFit::gridType_ = G1x1;
 std::vector<std::string>  MultiDimFit::poi_;
 std::vector<RooRealVar *> MultiDimFit::poiVars_;
-std::vector<double>       MultiDimFit::poiVals_;
+std::vector<float>       MultiDimFit::poiVals_;
 RooArgList                MultiDimFit::poiList_;
 double                    MultiDimFit::deltaNLL_ = 0;
 unsigned int MultiDimFit::points_ = 50;
@@ -72,7 +73,7 @@ std::string MultiDimFit::saveSpecifiedNuis_;
 std::string MultiDimFit::setParametersForGrid_;
 std::vector<std::string>  MultiDimFit::specifiedFuncNames_;
 std::vector<RooAbsReal*> MultiDimFit::specifiedFunc_;
-std::vector<double>       MultiDimFit::specifiedFuncVals_;
+std::vector<float>       MultiDimFit::specifiedFuncVals_;
 RooArgList                MultiDimFit::specifiedFuncList_;
 std::vector<std::string>  MultiDimFit::specifiedCatNames_;
 std::vector<RooCategory*> MultiDimFit::specifiedCat_;
@@ -80,7 +81,7 @@ std::vector<int>        MultiDimFit::specifiedCatVals_;
 RooArgList                MultiDimFit::specifiedCatList_;
 std::vector<std::string>  MultiDimFit::specifiedNuis_;
 std::vector<RooRealVar *> MultiDimFit::specifiedVars_;
-std::vector<double>       MultiDimFit::specifiedVals_;
+std::vector<float>       MultiDimFit::specifiedVals_;
 RooArgList                MultiDimFit::specifiedList_;
 bool MultiDimFit::saveInactivePOI_= false;
 bool MultiDimFit::skipDefaultStart_ = false;
@@ -430,13 +431,13 @@ void MultiDimFit::initOnce(RooWorkspace *w, RooStats::ModelConfig *mc_s) {
 
     // then add the branches to the tree (at the end, so there are no resizes)
     for (int i = 0, n = poi_.size(); i < n; ++i) {
-        Combine::addBranch(poi_[i].c_str(), &poiVals_[i], (poi_[i]+"/D").c_str());
+        Combine::addBranch(poi_[i].c_str(), &poiVals_[i], (poi_[i]+"/F").c_str());
     }
     for (int i = 0, n = specifiedNuis_.size(); i < n; ++i) {
-        Combine::addBranch(specifiedNuis_[i].c_str(), &specifiedVals_[i], (specifiedNuis_[i]+"/D").c_str());
+        Combine::addBranch(specifiedNuis_[i].c_str(), &specifiedVals_[i], (specifiedNuis_[i]+"/F").c_str());
     }
     for (int i = 0, n = specifiedFuncNames_.size(); i < n; ++i) {
-        Combine::addBranch(specifiedFuncNames_[i].c_str(), &specifiedFuncVals_[i], (specifiedFuncNames_[i]+"/D").c_str());
+        Combine::addBranch(specifiedFuncNames_[i].c_str(), &specifiedFuncVals_[i], (specifiedFuncNames_[i]+"/F").c_str());
     }
     for (int i = 0, n = specifiedCatNames_.size(); i < n; ++i) {
 	Combine::addBranch(specifiedCatNames_[i].c_str(), &specifiedCatVals_[i], (specifiedCatNames_[i]+"/I").c_str()); 
@@ -514,9 +515,9 @@ void MultiDimFit::doImpact(RooFitResult &res, RooAbsReal &nll) {
 
   // Save the best-fit values of the saved parameters
   // we want to measure the impacts on
-  std::vector<double> specifiedVals = specifiedVals_;
-  std::vector<double> impactLo = specifiedVals_;
-  std::vector<double> impactHi = specifiedVals_;
+  std::vector<float> specifiedVals = specifiedVals_;
+  std::vector<float> impactLo = specifiedVals_;
+  std::vector<float> impactHi = specifiedVals_;
 
   int len = 9;
   for (int i = 0, n = poi_.size(); i < n; ++i) {
@@ -552,7 +553,7 @@ void MultiDimFit::doImpact(RooFitResult &res, RooAbsReal &nll) {
     // Another snapshot to reset between high and low fits
     RooArgSet snap;
     params->snapshot(snap);
-    std::vector<double> doVals = {bestFitVal - loErr, bestFitVal + hiErr};
+    std::vector<float> doVals = {static_cast<float>(bestFitVal - loErr), static_cast<float>(bestFitVal + hiErr)};
     for (unsigned x = 0; x < doVals.size(); ++x) {
       *params = snap;
       poiVals_[i] = doVals[x];
@@ -602,7 +603,7 @@ void MultiDimFit::doGrid(RooWorkspace *w, RooAbsReal &nll)
 
     if (startFromPreFit_) w->loadSnapshot("clean");
 
-    std::vector<double> p0(n), pmin(n), pmax(n);
+    std::vector<float> p0(n), pmin(n), pmax(n);
     for (unsigned int i = 0; i < n; ++i) {
         p0[i] = poiVars_[i]->getVal();
         pmin[i] = poiVars_[i]->getMin();
@@ -1129,7 +1130,7 @@ void MultiDimFit::doBox(RooAbsReal &nll, double cl, const char *name, bool commi
     unsigned int n = poi_.size();
     double nll0 = nll.getVal(), threshold = nll0 + 0.5*ROOT::Math::chisquared_quantile_c(1-cl,n+nOtherFloatingPoi_);
 
-    std::vector<double> p0(n);
+    std::vector<float> p0(n);
     for (unsigned int i = 0; i < n; ++i) {
         p0[i] = poiVars_[i]->getVal();
         poiVars_[i]->setConstant(false);
@@ -1205,8 +1206,8 @@ void MultiDimFit::splitGridPoints(const std::string& s, std::vector<unsigned int
 
 // Extract the ranges map from the input string
 // Assumes the string is formatted with colons like "poi_name1=lo_lim,hi_lim:poi_name2=lo_lim,hi_lim"
-std::map<std::string, std::vector<double>> MultiDimFit::getRangesDictFromInString(std::string params_ranges_string_in) {
-    std::map<std::string, std::vector<double>> out_range_dict;
+std::map<std::string, std::vector<float>> MultiDimFit::getRangesDictFromInString(std::string params_ranges_string_in) {
+    std::map<std::string, std::vector<float>> out_range_dict;
     std::vector<std::string> params_ranges_string_lst = Utils::split(params_ranges_string_in, ":");
     for (UInt_t p = 0; p < params_ranges_string_lst.size(); ++p) {
         std::vector<std::string> params_ranges_string = Utils::split(params_ranges_string_lst[p], "=,");
@@ -1214,8 +1215,8 @@ std::map<std::string, std::vector<double>> MultiDimFit::getRangesDictFromInStrin
             std::cout << "Error parsing expression : " << params_ranges_string_lst[p] << std::endl;
         }
         std::string wc_name =params_ranges_string[0];
-        double lim_lo = atof(params_ranges_string[1].c_str());
-        double lim_hi = atof(params_ranges_string[2].c_str());
+        float lim_lo = atof(params_ranges_string[1].c_str());
+        float lim_hi = atof(params_ranges_string[2].c_str());
         out_range_dict.insert({wc_name,{lim_lo,lim_hi}});
     }
     return out_range_dict;
