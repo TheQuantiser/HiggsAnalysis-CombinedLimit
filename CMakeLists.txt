@@ -97,14 +97,15 @@ if(USE_MOREFIT)
     add_library(morefit_interface INTERFACE)
     target_include_directories(morefit_interface INTERFACE
       ${CMAKE_CURRENT_SOURCE_DIR}/morefit/include
-      ${CMAKE_CURRENT_BINARY_DIR}/morefit)
+      ${CMAKE_CURRENT_BINARY_DIR}/morefit
+      ${OpenCL_INCLUDE_DIRS})
     target_link_libraries(morefit_interface INTERFACE
       OpenCL::OpenCL ROOT::Minuit2 clang-cpp LLVM)
     target_link_libraries(${LIBNAME} PRIVATE morefit_interface)
     target_compile_definitions(${LIBNAME} PRIVATE USE_MOREFIT)
     set(MOREFIT_TUS ${CMAKE_CURRENT_SOURCE_DIR}/src/MoreFitBackend.cc)
     set_source_files_properties(${MOREFIT_TUS}
-      PROPERTIES COMPILE_OPTIONS "-include;cassert;-UNDEBUG")
+      PROPERTIES COMPILE_OPTIONS "-include;cassert;-include;CL/cl.h;-UNDEBUG")
     add_executable(combineMoreFitDemo bin/combineMoreFitDemo.cc)
     target_link_libraries(combineMoreFitDemo PUBLIC ${LIBNAME})
   else()
