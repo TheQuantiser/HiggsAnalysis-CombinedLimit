@@ -2,10 +2,16 @@ cmake_minimum_required( VERSION 3.11 FATAL_ERROR )
 set(CMAKE_CXX_STANDARD 17)
 project(HiggsAnalysisCombinedLimit VERSION 0.0.1)
 
-# Detect Conda environments if CMAKE_PREFIX_PATH is not explicitly provided
-if(DEFINED ENV{CONDA_PREFIX} AND NOT CMAKE_PREFIX_PATH)
+# Prefer libraries from an active Conda environment and use its shell for
+# ROOT dictionary generation to avoid readline mismatches.
+if(DEFINED ENV{CONDA_PREFIX})
   list(APPEND CMAKE_PREFIX_PATH $ENV{CONDA_PREFIX})
-  message(STATUS "Detected Conda environment at $ENV{CONDA_PREFIX}")
+  list(REMOVE_DUPLICATES CMAKE_PREFIX_PATH)
+  message(STATUS "Using Conda environment at $ENV{CONDA_PREFIX}")
+  if(EXISTS "$ENV{CONDA_PREFIX}/bin/bash")
+    set(ENV{SHELL} "$ENV{CONDA_PREFIX}/bin/bash")
+    message(STATUS "Using shell from Conda: $ENV{SHELL}")
+  endif()
 endif()
 
 option( MODIFY_ROOTMAP "Modify generated Rootmap to take out classes already bundled in StatAnalysis" FALSE )

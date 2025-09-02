@@ -20,14 +20,16 @@ dependencies and is disabled by default. To build with the backend enabled:
 
 ```
 mkdir build && cd build
-cmake .. -DUSE_MOREFIT=ON -DCMAKE_PREFIX_PATH="$CONDA_PREFIX"
+cmake .. -DUSE_MOREFIT=ON
 make -j$(nproc)
 ```
 
-The `CMAKE_PREFIX_PATH` flag allows CMake to locate dependencies within an
-active Conda environment. The build also produces a small
-`combineMoreFitDemo` executable that prints the result of a dummy evaluation to
-confirm the backend was compiled in.
+When a Conda environment is active, CMake automatically consumes
+`$CONDA_PREFIX` and uses the Conda-provided shell to ensure the ROOT tooling
+links against the correct readline and dependency stack. You may still pass
+`-DCMAKE_PREFIX_PATH` explicitly to override or extend the search path. The
+build also produces a small `combineMoreFitDemo` executable that prints the
+result of a dummy evaluation to confirm the backend was compiled in.
 
 At runtime the backend can be selected with `--backend=morefit`. The feature is
 experimental and should not alter existing RooFit behaviour when left at the
