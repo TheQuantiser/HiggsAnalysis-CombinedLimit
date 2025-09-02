@@ -27,6 +27,7 @@
 #include "../interface/ProfilingTools.h"
 #include "../interface/GenerateOnly.h"
 #include "../interface/CombineLogger.h"
+#include "../src/BackendConfig.h"
 #include <map>
 
 using namespace std;
@@ -46,6 +47,7 @@ int main(int argc, char **argv) {
   int runToys;
   int    seed;
   string toysFile;
+  string backendStr;
 
   vector<string> librariesToLoad;
   vector<string> runtimeDefines;
@@ -86,6 +88,7 @@ int main(int argc, char **argv) {
     ("method,M",      po::value<string>(&whichMethod)->default_value("AsymptoticLimits"), methodsDesc.c_str())
     ("verbose,v",  po::value<int>(&verbose)->default_value(0), "Verbosity level (-1 = very quiet; 0 = quiet, 1 = verbose, 2+ = debug)")
     ("help,h", "Produce help message")
+    ("backend", po::value<string>(&backendStr)->default_value("roofit"), "Likelihood backend (roofit or morefit)")
     ;
   combiner.statOptions().add_options()
     ("toys,t", po::value<int>(&runToys)->default_value(0), "Number of Toy MC extractions")
@@ -168,6 +171,7 @@ int main(int argc, char **argv) {
   try{
     po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
     po::notify(vm);
+    BackendConfig::instance().setBackendFromString(backendStr);
   } catch(std::exception &ex) {
     cerr << "Invalid options: " << ex.what() << endl;
     cout << "Invalid options: " << ex.what() << endl;
