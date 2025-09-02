@@ -2,6 +2,12 @@ cmake_minimum_required( VERSION 3.11 FATAL_ERROR )
 set(CMAKE_CXX_STANDARD 17)
 project(HiggsAnalysisCombinedLimit VERSION 0.0.1)
 
+# Detect Conda environments if CMAKE_PREFIX_PATH is not explicitly provided
+if(DEFINED ENV{CONDA_PREFIX} AND NOT CMAKE_PREFIX_PATH)
+  list(APPEND CMAKE_PREFIX_PATH $ENV{CONDA_PREFIX})
+  message(STATUS "Detected Conda environment at $ENV{CONDA_PREFIX}")
+endif()
+
 option( MODIFY_ROOTMAP "Modify generated Rootmap to take out classes already bundled in StatAnalysis" FALSE )
 option( INSTALL_PYTHON "Install the Python library and scripts" TRUE )
 option( USE_VDT "Use VDT (fast and vectorisable mathematical functions)" TRUE )
@@ -13,11 +19,6 @@ option( USE_MOREFIT "Build with experimental MoreFit backend" OFF )
 # mkdir build; cd build
 # cmake path/to/source # change this path to where-ever you cloned Combine repo to
 # make -j4
-
-if(DEFINED ENV{CONDA_PREFIX} AND NOT CMAKE_PREFIX_PATH)
-  list(APPEND CMAKE_PREFIX_PATH $ENV{CONDA_PREFIX})
-  message(STATUS "Detected Conda prefix: $ENV{CONDA_PREFIX}")
-endif()
 
 find_package(ROOT REQUIRED COMPONENTS MathMore RooFitCore RooFit RooStats HistFactory Minuit2)
 find_package(Eigen3 REQUIRED)
@@ -53,7 +54,7 @@ target_link_libraries(${LIBNAME} PUBLIC Eigen3::Eigen ${ROOT_LIBRARIES} ${Boost_
 if(NOT USE_VDT)
   target_compile_definitions(${LIBNAME} PUBLIC COMBINE_NO_VDT)
 else()
-  target_link_libraries(${LIBNAME} PRIVATE VDT::VDT)
+  target_link_libraries(${LIBNAME} PUBLIC VDT::VDT)
 endif()
 
 if(USE_MOREFIT)

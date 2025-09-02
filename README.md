@@ -15,15 +15,20 @@ The `Combine` tool publication can be found [here](https://arxiv.org/abs/2404.06
 ### Experimental MoreFit backend
 
 An optional integration of the [MoreFit](https://github.com/cms-analysis/MoreFit) likelihood engine is provided for
-development and benchmarking.  It reuses the Minuit2 library already bundled with ROOT to avoid duplication of
-dependencies and is disabled by default.  To build with the backend enabled run:
+development and benchmarking. It reuses the Minuit2 library already bundled with ROOT to avoid duplication of
+dependencies and is disabled by default. To build with the backend enabled:
 
 ```
-cmake -DUSE_MOREFIT=ON ..
+mkdir build && cd build
+cmake .. -DUSE_MOREFIT=ON -DCMAKE_PREFIX_PATH="$CONDA_PREFIX"
+make -j$(nproc)
 ```
 
-The build also produces a small `combineMoreFitDemo` executable that prints the
-result of a dummy evaluation to confirm the backend was compiled in.
+The `CMAKE_PREFIX_PATH` flag allows CMake to locate dependencies within an
+active Conda environment. The build also produces a small
+`combineMoreFitDemo` executable that prints the result of a dummy evaluation to
+confirm the backend was compiled in.
 
-At runtime the backend can be selected with `--backend=morefit`.  The feature is experimental and should not alter
-existing RooFit behaviour when left at the default.
+At runtime the backend can be selected with `--backend=morefit`. The feature is
+experimental and should not alter existing RooFit behaviour when left at the
+default.
