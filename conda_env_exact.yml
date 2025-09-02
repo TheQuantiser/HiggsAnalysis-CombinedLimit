@@ -35,6 +35,7 @@ dependencies:
   - decorator=4.4.2=py_0
   - defusedxml=0.7.1=pyhd3eb1b0_0
   - eigen=3.3.9=h4bd325d_1
+  - ceres-solver
   - entrypoints=0.3=py27h8c360ce_1001
   - enum34=1.1.10=py27h8c360ce_1
   - expat=2.3.0=h9c3ff4c_0
