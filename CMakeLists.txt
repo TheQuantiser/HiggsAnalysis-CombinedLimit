@@ -90,11 +90,14 @@ if(USE_MOREFIT)
   find_package(LLVM CONFIG QUIET)
   find_package(Clang CONFIG QUIET)
   if(OpenCL_FOUND AND LLVM_FOUND AND Clang_FOUND)
+    find_library(MVEC_LIBRARY mvec REQUIRED)
+    message(STATUS "libmvec location: ${MVEC_LIBRARY}")
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/morefit/minuit2)
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
                     ${ROOT_INCLUDE_DIRS}
                     ${CMAKE_CURRENT_BINARY_DIR}/morefit/minuit2/inc)
     add_library(morefit_interface INTERFACE)
+    target_compile_definitions(morefit_interface INTERFACE "MVEC_FILE_PATH=\"${MVEC_LIBRARY}\"")
     target_include_directories(morefit_interface INTERFACE
       ${CMAKE_CURRENT_SOURCE_DIR}/morefit/include
       ${CMAKE_CURRENT_BINARY_DIR}/morefit
