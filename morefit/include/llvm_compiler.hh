@@ -13,6 +13,7 @@
 
 #include <llvm/IR/Module.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/VirtualFileSystem.h>
 #include <llvm/TargetParser/Host.h>
 
 #include "compute.hh"
@@ -83,7 +84,12 @@ namespace cc {
       assert(ok);
 
       //Setup custom diagnostic printer.
+#if CLANG_VERSION_MAJOR >= 16
+      CC.createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                          DC.get(), false /* own DiagnosticConsumer */);
+#else
       CC.createDiagnostics(DC.get(), false /* own DiagnosticConsumer */);
+#endif
 
       //Configure remapping from pseudo file name to in-memory code buffer
       //PreprocessorOptions take ownership of MemoryBuffer.
