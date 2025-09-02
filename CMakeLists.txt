@@ -61,10 +61,20 @@ file(GLOB SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} src/*.c*)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/HiggsAnalysis)
 execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/HiggsAnalysis/CombinedLimit" )
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+# Avoid Conda's libreadline being preloaded by clearing LD_LIBRARY_PATH
+if(DEFINED ENV{LD_LIBRARY_PATH})
+  set(_COMBINE_SAVED_LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
+  unset(ENV{LD_LIBRARY_PATH})
+endif()
 
 ROOT_GENERATE_DICTIONARY(G__${LIBNAME} HiggsAnalysis/CombinedLimit/src/classes.h LINKDEF src/classes_def.xml
         MODULE ${LIBNAME}
         OPTIONS ${ROOTCLING_OPTIONS})
+
+if(DEFINED _COMBINE_SAVED_LD_LIBRARY_PATH)
+  set(ENV{LD_LIBRARY_PATH} "${_COMBINE_SAVED_LD_LIBRARY_PATH}")
+  unset(_COMBINE_SAVED_LD_LIBRARY_PATH)
+endif()
 add_library(${LIBNAME} SHARED ${SOURCES} G__${LIBNAME}.cxx)
 set_target_properties(${LIBNAME} PROPERTIES PUBLIC_HEADER "${HEADERS}")
 target_link_libraries(${LIBNAME} PUBLIC Eigen3::Eigen ${ROOT_LIBRARIES} ${Boost_LIBRARIES})
