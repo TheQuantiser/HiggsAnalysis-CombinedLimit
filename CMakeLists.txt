@@ -14,6 +14,11 @@ option( USE_MOREFIT "Build with experimental MoreFit backend" OFF )
 # cmake path/to/source # change this path to where-ever you cloned Combine repo to
 # make -j4
 
+if(DEFINED ENV{CONDA_PREFIX} AND NOT CMAKE_PREFIX_PATH)
+  list(APPEND CMAKE_PREFIX_PATH $ENV{CONDA_PREFIX})
+  message(STATUS "Detected Conda prefix: $ENV{CONDA_PREFIX}")
+endif()
+
 find_package(ROOT REQUIRED COMPONENTS MathMore RooFitCore RooFit RooStats HistFactory Minuit2)
 find_package(Eigen3 REQUIRED)
 find_package(Vdt)
