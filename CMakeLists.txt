@@ -43,12 +43,12 @@ ROOT_GENERATE_DICTIONARY(G__${LIBNAME} HiggsAnalysis/CombinedLimit/src/classes.h
         OPTIONS ${ROOTCLING_OPTIONS})
 add_library(${LIBNAME} SHARED ${SOURCES} G__${LIBNAME}.cxx)
 set_target_properties(${LIBNAME} PROPERTIES PUBLIC_HEADER "${HEADERS}")
-target_link_libraries (${LIBNAME} Eigen3::Eigen ${ROOT_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(${LIBNAME} PUBLIC Eigen3::Eigen ${ROOT_LIBRARIES} ${Boost_LIBRARIES})
 
 if(NOT USE_VDT)
   target_compile_definitions(${LIBNAME} PUBLIC COMBINE_NO_VDT)
 else()
-  target_link_libraries (${LIBNAME} VDT::VDT)
+  target_link_libraries(${LIBNAME} PRIVATE VDT::VDT)
 endif()
 
 if(USE_MOREFIT)
