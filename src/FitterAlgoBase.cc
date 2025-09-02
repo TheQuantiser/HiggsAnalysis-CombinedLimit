@@ -1,6 +1,7 @@
 #include "../interface/FitterAlgoBase.h"
 #include <limits>
 #include <cmath>
+#include <string>
 
 #include "RooRealVar.h"
 #include "RooArgSet.h"
@@ -335,7 +336,8 @@ RooFitResult *FitterAlgoBase::doFit(RooAbsPdf &pdf, RooAbsData &data, const RooA
 	
         double r0 = r.getVal(), rMin = r.getMin(), rMax = r.getMax();
 
-       if (!robustFit_) {
+       bool isCeres = (std::string(ROOT::Math::MinimizerOptions::DefaultMinimizerType()) == "Ceres");
+       if (!robustFit_ && !isCeres) {
             if (do95_) {
 	    	int badFitResult = -1;
                 throw std::runtime_error("95% CL uncertainties with Minos are not working at the moment.");
@@ -355,10 +357,14 @@ RooFitResult *FitterAlgoBase::doFit(RooAbsPdf &pdf, RooAbsData &data, const RooA
             minim.minimizer().setPrintLevel(2);
             if (verbose>1) {tw.Reset(); tw.Start();}
             if (minim.minos(RooArgSet(r))) {
-               if (verbose>1)CombineLogger::instance().log("FitterAlgoBase.cc",__LINE__,std::string(Form("Run Minos in %f seconds (%f CPU time)",tw.RealTime(),tw.CpuTime() )),__func__); 
+               if (verbose>1)CombineLogger::instance().log("FitterAlgoBase.cc",__LINE__,std::string(Form("Run Minos in %f seconds (%f CPU time)",tw.RealTime(),tw.CpuTime() )),__func__);
                rf.setRange("err68", r.getVal() + r.getAsymErrorLo(), r.getVal() + r.getAsymErrorHi());
                rf.setAsymError(r.getAsymErrorLo(), r.getAsymErrorHi());
             }
+       } else if (!robustFit_ && isCeres) {
+            double err = rf.getError();
+            rf.setRange("err68", r.getVal() - err, r.getVal() + err);
+            rf.setAsymError(-err, err);
        } else {
             r.setVal(r0); r.setConstant(true);
 
