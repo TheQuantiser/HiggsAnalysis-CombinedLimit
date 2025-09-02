@@ -6,6 +6,13 @@ project(HiggsAnalysisCombinedLimit VERSION 0.0.1)
 if(DEFINED ENV{CONDA_PREFIX} AND NOT CMAKE_PREFIX_PATH)
   list(APPEND CMAKE_PREFIX_PATH $ENV{CONDA_PREFIX})
   message(STATUS "Detected Conda environment at $ENV{CONDA_PREFIX}")
+  # Ensure shell invoked by ROOT tooling comes from the active Conda
+  # environment to avoid readline symbol mismatches when generating
+  # dictionaries.  This selects the Conda-provided bash if available.
+  if(EXISTS "$ENV{CONDA_PREFIX}/bin/bash")
+    set(ENV{SHELL} "$ENV{CONDA_PREFIX}/bin/bash")
+    message(STATUS "Using shell from Conda: $ENV{SHELL}")
+  endif()
 endif()
 
 option( MODIFY_ROOTMAP "Modify generated Rootmap to take out classes already bundled in StatAnalysis" FALSE )
