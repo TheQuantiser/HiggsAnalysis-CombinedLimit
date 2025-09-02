@@ -5,6 +5,7 @@ project(HiggsAnalysisCombinedLimit VERSION 0.0.1)
 option( MODIFY_ROOTMAP "Modify generated Rootmap to take out classes already bundled in StatAnalysis" FALSE )
 option( INSTALL_PYTHON "Install the Python library and scripts" TRUE )
 option( USE_VDT "Use VDT (fast and vectorisable mathematical functions)" TRUE )
+option( USE_MOREFIT "Build with experimental MoreFit backend" OFF )
 
 # Can build with CMake after e.g. setting up StatAnalysis release like this:
 # export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase
@@ -13,7 +14,7 @@ option( USE_VDT "Use VDT (fast and vectorisable mathematical functions)" TRUE )
 # cmake path/to/source # change this path to where-ever you cloned Combine repo to
 # make -j4
 
-find_package(ROOT REQUIRED COMPONENTS MathMore RooFitCore RooFit RooStats HistFactory)
+find_package(ROOT REQUIRED COMPONENTS MathMore RooFitCore RooFit RooStats HistFactory Minuit2)
 find_package(Eigen3 REQUIRED)
 find_package(Vdt)
 find_package(LCG QUIET) # only used for FindBoost in StatAnalysis
@@ -50,6 +51,29 @@ else()
   target_link_libraries (${LIBNAME} VDT::VDT)
 endif()
 
+if(USE_MOREFIT)
+  find_package(OpenCL QUIET)
+  find_package(LLVM CONFIG QUIET)
+  find_package(Clang CONFIG QUIET)
+  if(OpenCL_FOUND AND LLVM_FOUND AND Clang_FOUND)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/morefit/minuit2)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                    ${ROOT_INCLUDE_DIRS}
+                    ${CMAKE_CURRENT_BINARY_DIR}/morefit/minuit2/inc)
+    add_library(morefit_interface INTERFACE)
+    target_include_directories(morefit_interface INTERFACE
+      ${CMAKE_CURRENT_SOURCE_DIR}/morefit/include
+      ${CMAKE_CURRENT_BINARY_DIR}/morefit)
+    target_link_libraries(morefit_interface INTERFACE
+      OpenCL::OpenCL ROOT::Minuit2 clang-cpp LLVM)
+    target_link_libraries(${LIBNAME} PRIVATE morefit_interface)
+    target_compile_definitions(${LIBNAME} PRIVATE USE_MOREFIT)
+    add_executable(combineMoreFitDemo bin/combineMoreFitDemo.cc)
+    target_link_libraries(combineMoreFitDemo PUBLIC ${LIBNAME})
+  else()
+    message(WARNING "MoreFit dependencies not found. Building without MoreFit support.")
+  endif()
+endif()
 add_executable(combine bin/combine.cpp)
 target_link_libraries(combine PUBLIC ${LIBNAME})
 
