@@ -103,10 +103,8 @@ if(USE_MOREFIT)
     target_link_libraries(${LIBNAME} PRIVATE morefit_interface)
     target_compile_definitions(${LIBNAME} PRIVATE USE_MOREFIT)
     set(MOREFIT_TUS ${CMAKE_CURRENT_SOURCE_DIR}/src/MoreFitBackend.cc)
-    target_compile_options(${LIBNAME} PRIVATE
-      $<$<COMPILE_LANGUAGE:CXX>:-include;cassert>)
     set_source_files_properties(${MOREFIT_TUS}
-      PROPERTIES COMPILE_OPTIONS "-UNDEBUG")
+      PROPERTIES COMPILE_OPTIONS "-include;cassert;-UNDEBUG")
     add_executable(combineMoreFitDemo bin/combineMoreFitDemo.cc)
     target_link_libraries(combineMoreFitDemo PUBLIC ${LIBNAME})
   else()
