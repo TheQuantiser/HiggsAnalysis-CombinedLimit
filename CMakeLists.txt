@@ -8,6 +8,13 @@ if(DEFINED ENV{CONDA_PREFIX})
   list(APPEND CMAKE_PREFIX_PATH $ENV{CONDA_PREFIX})
   list(REMOVE_DUPLICATES CMAKE_PREFIX_PATH)
   message(STATUS "Using Conda environment at $ENV{CONDA_PREFIX}")
+  # Ensure all tools resolve headers and libraries from the Conda env
+  set(ENV{PATH} "$ENV{CONDA_PREFIX}/bin:$ENV{PATH}")
+  set(ENV{LD_LIBRARY_PATH} "$ENV{CONDA_PREFIX}/lib")
+  set(ENV{LIBRARY_PATH} "$ENV{CONDA_PREFIX}/lib")
+  set(ENV{CPATH} "$ENV{CONDA_PREFIX}/include")
+  # Pin libstdc++ and readline to avoid mismatches when ROOT spawns shells
+  set(ENV{LD_PRELOAD} "$ENV{CONDA_PREFIX}/lib/libstdc++.so.6:$ENV{CONDA_PREFIX}/lib/libreadline.so")
   if(EXISTS "$ENV{CONDA_PREFIX}/bin/bash")
     set(ENV{SHELL} "$ENV{CONDA_PREFIX}/bin/bash")
     message(STATUS "Using shell from Conda: $ENV{SHELL}")
@@ -26,7 +33,12 @@ option( USE_MOREFIT "Build with experimental MoreFit backend" OFF )
 # cmake path/to/source # change this path to where-ever you cloned Combine repo to
 # make -j4
 
-find_package(ROOT REQUIRED COMPONENTS MathMore RooFitCore RooFit RooStats HistFactory Minuit2)
+if(DEFINED ENV{CONDA_PREFIX})
+  find_package(ROOT REQUIRED CONFIG COMPONENTS MathMore RooFitCore RooFit RooStats HistFactory Minuit2
+               PATHS "$ENV{CONDA_PREFIX}" NO_DEFAULT_PATH)
+else()
+  find_package(ROOT REQUIRED CONFIG COMPONENTS MathMore RooFitCore RooFit RooStats HistFactory Minuit2)
+endif()
 find_package(Eigen3 REQUIRED)
 find_package(Vdt)
 find_package(LCG QUIET) # only used for FindBoost in StatAnalysis

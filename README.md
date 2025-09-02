@@ -25,8 +25,10 @@ make -j$(nproc)
 ```
 
 When a Conda environment is active, CMake automatically consumes
-`$CONDA_PREFIX` and uses the Conda-provided shell to ensure the ROOT tooling
-links against the correct readline and dependency stack. You may still pass
+`$CONDA_PREFIX` and adjusts `PATH`, `LD_LIBRARY_PATH`, `LIBRARY_PATH`, and
+`CPATH` so that all tools — including ROOT’s `rootcling` — resolve headers and
+libraries from the environment.  It also preloads Conda’s `libstdc++` and
+`libreadline` to avoid symbol mismatches. You may still pass
 `-DCMAKE_PREFIX_PATH` explicitly to override or extend the search path. The
 build also produces a small `combineMoreFitDemo` executable that prints the
 result of a dummy evaluation to confirm the backend was compiled in.
