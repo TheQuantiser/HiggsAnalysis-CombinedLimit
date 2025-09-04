@@ -84,13 +84,29 @@ OBJS = $(SRCS:.cc=.o)
 OBJS += $(SRXS:.cxx=.o)
 PROGS = $(notdir $(wildcard ${PROG_DIR}/*.cpp)) 
 EXES = $(PROGS:.cpp=)
-SCRIPTS = $(notdir $(wildcard ${SCRIPTS_DIR}/*.py)) 
+SCRIPTS = $(notdir $(wildcard ${SCRIPTS_DIR}/*.py))
 PYLIB_DIR = $(LIB_DIR)/python
+
+# Ceres minimizer plugin ------------------------------------------------------
+CERES_LIBNAME = CeresMinimizer
+CERES_SONAME  = lib$(CERES_LIBNAME).so
+CERES_SRC     = ceres/CeresMinimizer.cc
+CERES_OBJ     = $(OBJ_DIR)/CeresMinimizer.o
+# allow includes and linking from conda or custom installs
+CERES_INC     = $(if $(CONDA_PREFIX),-I${CONDA_PREFIX}/include,)
+CERES_LIB     = $(if $(CONDA_PREFIX),-L${CONDA_PREFIX}/lib,) -lceres -lglog -lgflags
+# glog headers from conda need explicit definitions when not using CMake
+# glog >=0.7 requires explicit opt-in when consuming headers directly
+CERES_DEFS    = -DGLOG_USE_GLOG_EXPORT -DGLOG_USE_GFLAGS
 
 #Makefile Rules ---------------------------------------------------------------
 .PHONY: clean exe python
 
 all: exe python
+ifdef CERES
+all: $(LIB_DIR)/$(CERES_SONAME)
+CCFLAGS += $(CERES_INC) $(CERES_DEFS)
+endif
 
 #---------------------------------------
 
@@ -125,6 +141,18 @@ $(LIB_DIR):
 
 ${LIB_DIR}/$(SONAME): $(addprefix $(OBJ_DIR)/,$(OBJS)) $(OBJ_DIR)/a/$(DICTNAME).o | $(LIB_DIR)
 	$(LD) $(LDFLAGS) $(BOOST_INC) $^ $(SOFLAGS) -o $@ $(LIBS)
+
+#---------------------------------------
+
+ifdef CERES
+
+$(CERES_OBJ): $(CERES_SRC) $(INC_DIR)/CeresMinimizer.h | $(OBJ_DIR)
+	$(CXX) $(CCFLAGS) -I $(INC_DIR) -I $(SRC_DIR) -I $(PARENT_DIR) -c $< -o $@
+
+$(LIB_DIR)/$(CERES_SONAME): $(CERES_OBJ) | $(LIB_DIR)
+	$(CXX) -shared -fPIC -o $@ $^ $(CERES_LIB) $(ROOTLIBS)
+
+endif
 
 #---------------------------------------
 

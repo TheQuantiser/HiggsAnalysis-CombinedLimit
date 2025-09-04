@@ -190,6 +190,8 @@ conda deactivate
 conda activate combine
 
 make CONDA=1 -j 8
+# build with optional Ceres minimizer plugin
+make CONDA=1 CERES=1 -j 8
 ```
 
 Using <span style="font-variant:small-caps;">Combine</span> from then on should only require sourcing the conda environment 
