@@ -423,10 +423,12 @@ bool nllutils::robustMinimize(RooAbsReal &nll, RooMinimizer &minim, int verbosit
             DBG(DBG_PLTestStat_main, (printf("\n  --> false minimum, status %d, cov. quality %d, edm %10.7f, nll initial % 10.4f, nll final % 10.4f, change %10.5f\n", status, res->covQual(), res->edm(), initialNll, nll.getVal(), initialNll - nll.getVal())))
             if (pars.get() == 0) pars.reset(nll.getParameters((const RooArgSet*)0));
             *pars = res->floatParsInit();
+            std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+            std::string algo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
             if (tries == 0) {
                 COUNT_ONE("nllutils::robustMinimize: false minimum (first try)")
                 DBG(DBG_PLTestStat_main, (printf("    ----> Doing a re-scan and re-trying\n")))
-                minim.minimize("Minuit2","Scan");
+                minim.minimize(type.c_str(), (type=="Minuit"||type=="Minuit2")?"Scan":algo.c_str());
             } else if (tries == 1) {
                 COUNT_ONE("nllutils::robustMinimize: false minimum (second try)")
                 DBG(DBG_PLTestStat_main, (printf("    ----> Re-trying with strategy = 1\n")))
@@ -438,7 +440,7 @@ bool nllutils::robustMinimize(RooAbsReal &nll, RooMinimizer &minim, int verbosit
             } else  {
                 COUNT_ONE("nllutils::robustMinimize: false minimum (third try)")
                 DBG(DBG_PLTestStat_main, (printf("    ----> Last attempt: simplex method \n")))
-                status = minim.minimize("Minuit2","Simplex");
+                status = minim.minimize(type.c_str(), (type=="Minuit"||type=="Minuit2")?"Simplex":algo.c_str());
                 if (nll.getVal() < initialNll + 0.02) {
                     DBG(DBG_PLTestStat_main, (printf("\n  --> success: status %d, nll initial % 10.4f, nll final % 10.4f, change %10.5f\n", status, initialNll, nll.getVal(), initialNll - nll.getVal())))
                     if (do_debug) printf("\n  --> success: status %d, nll initial % 10.4f, nll final % 10.4f, change %10.5f\n", status, initialNll, nll.getVal(), initialNll - nll.getVal());
@@ -452,13 +454,15 @@ bool nllutils::robustMinimize(RooAbsReal &nll, RooMinimizer &minim, int verbosit
                     return false;
                 }
             }
-        } else if (status == 0) {  
+        } else if (status == 0) {
             DBG(DBG_PLTestStat_main, (printf("\n  --> success: status %d, nll initial % 10.4f, nll final % 10.4f, change %10.5f\n", status, initialNll, nll.getVal(), initialNll - nll.getVal())))
             if (do_debug) printf("\n  --> success: status %d, nll initial % 10.4f, nll final % 10.4f, change %10.5f\n", status, initialNll, nll.getVal(), initialNll - nll.getVal());
             COUNT_ONE("nllutils::robustMinimize: final success")
             ret = true;
             break;
         } else if (tries != maxtries) {
+            std::string type(ROOT::Math::MinimizerOptions::DefaultMinimizerType());
+            std::string algo(ROOT::Math::MinimizerOptions::DefaultMinimizerAlgo());
             std::unique_ptr<RooFitResult> res(do_debug ? minim.save() : 0);
             //PerfCounter::add("Minimizer.save() called for failed minimization"); 
             if (tries > 0 && res->edm() < 0.05*ROOT::Math::MinimizerOptions::DefaultTolerance()) {
@@ -473,13 +477,13 @@ bool nllutils::robustMinimize(RooAbsReal &nll, RooMinimizer &minim, int verbosit
             if (tries == 1) {
                 COUNT_ONE("nllutils::robustMinimize: failed first attempt")
                 DBG(DBG_PLTestStat_main, (printf("    ----> Doing a re-scan first, and switching to strategy 1\n")))
-                minim.minimize("Minuit2","Scan");
+                minim.minimize(type.c_str(), (type=="Minuit"||type=="Minuit2")?"Scan":algo.c_str());
                 minim.setStrategy(1);
             }
             if (tries == 2) {
                 COUNT_ONE("nllutils::robustMinimize: failed second attempt")
                 DBG(DBG_PLTestStat_main, (printf("    ----> trying with strategy = 2\n")))
-                minim.minimize("Minuit2","Scan");
+                minim.minimize(type.c_str(), (type=="Minuit"||type=="Minuit2")?"Scan":algo.c_str());
                 minim.setStrategy(2);
             }
         } else {
