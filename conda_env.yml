@@ -12,3 +12,6 @@ dependencies:
   - boost-cpp
   - pcre
   - eigen
+  - ceres-solver
+  - gflags
+  - glog
