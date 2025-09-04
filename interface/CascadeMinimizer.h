@@ -36,9 +36,10 @@ class CascadeMinimizer {
         //void collectIrrelevantNuisances(RooAbsCollection &irrelevant) const ;
 	bool freezeDiscParams(const bool);
         void setAutoBounds(const RooArgSet *pois) ;
-        void setAutoMax(const RooArgSet *pois) ; 
-	double tolerance() {return defaultMinimizerTolerance_;};
-	std::string algo() {return defaultMinimizerAlgo_;};
+        void setAutoMax(const RooArgSet *pois) ;
+        double tolerance() {return defaultMinimizerTolerance_;};
+        std::string algo() {return defaultMinimizerAlgo_;};
+        std::string type() {return defaultMinimizerType_;};
     private:
         RooAbsReal & nll_;
         std::unique_ptr<RooMinimizer> minimizer_;
@@ -107,8 +108,9 @@ class CascadeMinimizer {
     	static bool runShortCombinations; 
         //static void setDefaultIntegrator(RooCategory &cat, const std::string & val) ;
 
-	static std::map<std::string,std::vector<std::string> > const minimizerAlgoMap_;
-	static bool checkAlgoInType(std::string, std::string );
+        static std::map<std::string,std::vector<std::string> > const minimizerAlgoMap_;
+        static bool checkAlgoInType(std::string, std::string );
+        static void printCeresConfig(int verbose);
 };
 
 // Singleton Class inside!
